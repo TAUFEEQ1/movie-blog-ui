@@ -19,17 +19,20 @@ Make sure you have a Strapi backend running at `http://localhost:1337`. The back
 ### Installation
 
 1. Install dependencies:
-```bash
-npm install
-```
+
+    ```bash
+    npm install
+    ```
 
 2. Create your environment variables:
-```bash
-cp .env.example .env
-```
+
+    ```bash
+    cp .env.example .env
+    ```
 
 3. Update the `.env` file with your Strapi backend URL:
-```
+
+```env
 STRAPI_URL=http://localhost:1337
 ```
 
@@ -54,7 +57,7 @@ The application includes a complete authentication system:
 
 ## Project Structure
 
-```
+```env
 ├── components/          # Vue components
 ├── composables/         # Vue composables
 │   └── useAuth.ts      # Authentication composable
