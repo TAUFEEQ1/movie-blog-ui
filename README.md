@@ -4,11 +4,12 @@ A modern movie blog frontend built with Nuxt 3 and powered by Strapi backend.
 
 ## Features
 
-- 🔐 **Authentication**: Complete user authentication system with Strapi
+- 🔐 **Direct API Authentication**: Direct HTTP calls to Strapi API for reliable authentication
 - 🎬 **Movie Reviews**: Create and manage movie reviews
 - 📱 **Responsive Design**: Modern UI with Tailwind CSS
 - 🚀 **Fast Performance**: Built with Nuxt 3 for optimal performance
 - 🔒 **Protected Routes**: Middleware-based route protection
+- ⚠️ **Robust Error Handling**: Proper handling of Strapi's 400/401 error responses
 
 ## Setup
 
