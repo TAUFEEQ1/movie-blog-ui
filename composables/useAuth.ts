@@ -25,29 +25,44 @@ export interface RegisterCredentials {
 }
 
 export const useAuth = () => {
-  const { $strapi } = useNuxtApp()
   const user = useState<User | null>('auth.user', () => null)
   const token = useState<string | null>('auth.token', () => null)
 
   // Initialize auth state from cookies
   const initAuth = async () => {
-    const strapiAuth = $strapi as any
-    const storedToken = strapiAuth.getToken()
-    if (storedToken) {
-      token.value = storedToken
-      try {
-        const userData = await strapiAuth.fetchUser()
-        user.value = userData
-      } catch (error) {
-        // Token might be expired, clear it
-        await logout()
+    try {
+      const { $strapi } = useNuxtApp()
+      if (!$strapi) {
+        console.warn('Strapi plugin not available yet')
+        return
       }
+      
+      const strapiAuth = $strapi as any
+      const storedToken = strapiAuth.getToken()
+      if (storedToken) {
+        token.value = storedToken
+        try {
+          const userData = await strapiAuth.fetchUser()
+          user.value = userData
+        } catch (error) {
+          // Token might be expired, clear it
+          console.warn('Token validation failed:', error)
+          await logout()
+        }
+      }
+    } catch (error) {
+      console.warn('Failed to initialize auth:', error)
     }
   }
 
   // Login function
   const login = async (credentials: LoginCredentials): Promise<boolean> => {
     try {
+      const { $strapi } = useNuxtApp()
+      if (!$strapi) {
+        throw new Error('Strapi not available')
+      }
+      
       const strapiAuth = $strapi as any
       const response = await strapiAuth.login(credentials)
       if (response.jwt && response.user) {
@@ -65,6 +80,11 @@ export const useAuth = () => {
   // Register function
   const register = async (credentials: RegisterCredentials): Promise<boolean> => {
     try {
+      const { $strapi } = useNuxtApp()
+      if (!$strapi) {
+        throw new Error('Strapi not available')
+      }
+      
       const strapiAuth = $strapi as any
       const response = await strapiAuth.register(credentials)
       if (response.jwt && response.user) {
@@ -81,8 +101,17 @@ export const useAuth = () => {
 
   // Logout function
   const logout = async () => {
-    const strapiAuth = $strapi as any
-    await strapiAuth.logout()
+    try {
+      const { $strapi } = useNuxtApp()
+      if ($strapi) {
+        const strapiAuth = $strapi as any
+        await strapiAuth.logout()
+      }
+    } catch (error) {
+      console.warn('Strapi logout failed:', error)
+    }
+    
+    // Always clear local state
     token.value = null
     user.value = null
     await navigateTo('/login')
@@ -98,6 +127,12 @@ export const useAuth = () => {
     if (!token.value) return null
     
     try {
+      const { $strapi } = useNuxtApp()
+      if (!$strapi) {
+        console.warn('Strapi not available')
+        return null
+      }
+      
       const strapiAuth = $strapi as any
       const userData = await strapiAuth.fetchUser()
       user.value = userData
