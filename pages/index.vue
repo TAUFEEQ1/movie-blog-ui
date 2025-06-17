@@ -131,17 +131,17 @@ const trendingMovies = ref<Movie[]>([
   {
     id: 1,
     title: "Openheimer",
-    poster: "https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=400&h=600&fit=crop",
+    poster:"https://www.themoviedb.org/t/p/w1280/8Gxv8gSFCU0XGDykEGv7zR1n2ua.jpg",
     rating: 4.8,
     genres: ["Thriller", "Detective"],
     year: 2023,
     duration: "2h 57m",
-    trailerUrl: "https://www.youtube.com/watch?v=uYPbbksJxIg"
+    trailerUrl: "https://youtu.be/bK6ldnjE3Y0"
   },
   {
     id: 2,
     title: "The Witcher",
-    poster: "https://images.unsplash.com/photo-1489599904472-c34eb5d19877?w=400&h=600&fit=crop",
+    poster:"https://www.themoviedb.org/t/p/w1280/cZ0d3rtvXPVvuiX22sP79K3Hmjz.jpg",
     rating: 4.2,
     genres: ["Drama", "Adventure"],
     year: 2023,
@@ -151,7 +151,7 @@ const trendingMovies = ref<Movie[]>([
   {
     id: 3,
     title: "The Marvels",
-    poster: "https://images.unsplash.com/photo-1578662996442-48f60103fc96?w=400&h=600&fit=crop",
+    poster:"https://www.themoviedb.org/t/p/w1280/9GBhzXMFjgcZ3FdR9w3bUMMTps5.jpg",
     rating: 3.5,
     genres: ["Action", "Adventure"],
     year: 2023,

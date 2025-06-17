@@ -27,6 +27,7 @@ export interface RegisterCredentials {
 export const useAuth = () => {
   const user = useState<User | null>('auth.user', () => null)
   const token = useState<string | null>('auth.token', () => null)
+  const isInitializing = useState<boolean>('auth.initializing', () => false)
   const config = useRuntimeConfig()
 
   // Direct API calls to Strapi
@@ -58,6 +59,10 @@ export const useAuth = () => {
   const initAuth = async () => {
     if (!import.meta.client) return
     
+    // Prevent multiple initialization calls
+    if (isInitializing.value) return
+    isInitializing.value = true
+    
     try {
       const storedToken = localStorage.getItem('strapi-jwt')
       if (storedToken) {
@@ -67,13 +72,17 @@ export const useAuth = () => {
         try {
           const userData = await apiCall('/users/me') as User
           user.value = userData
+          console.log('Auth initialized successfully', { user: userData.username })
         } catch (error) {
+          console.warn('Stored token is invalid, clearing auth state')
           // Token is invalid, clear it
           await logout()
         }
       }
     } catch (error) {
       console.warn('Failed to initialize auth:', error)
+    } finally {
+      isInitializing.value = false
     }
   }
 
@@ -170,6 +179,19 @@ export const useAuth = () => {
     return !!(token.value && user.value)
   })
 
+  // Test authentication by calling a protected endpoint
+  const testAuth = async () => {
+    if (!token.value) return false
+    
+    try {
+      await apiCall('/users/me')
+      return true
+    } catch (error) {
+      console.error('Auth test failed:', error)
+      return false
+    }
+  }
+
   // Get current user
   const getCurrentUser = async () => {
     if (!token.value) return null
@@ -194,6 +216,7 @@ export const useAuth = () => {
     logout,
     getCurrentUser,
     initAuth,
-    checkStrapiConnection
+    checkStrapiConnection,
+    testAuth
   }
 }

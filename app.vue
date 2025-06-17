@@ -7,10 +7,5 @@
 </template>
 
 <script setup lang="ts">
-// Initialize authentication on app startup
-const { initAuth } = useAuth()
-
-onMounted(async () => {
-  await initAuth()
-})
+// Auth initialization is now handled in the auth plugin
 </script>
