@@ -1,0 +1,11 @@
+{
+	"folders": [
+		{
+			"path": "../movie-blog-cms"
+		},
+		{
+   			"path": "../movie-blog-ui"
+  	  }
+	],
+	"settings": {}
+}
