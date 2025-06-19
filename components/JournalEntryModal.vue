@@ -344,7 +344,7 @@ const searchMedia = useDebounceFn(async () => {
 
   searching.value = true
   try {
-    const response = await strapiCall('/media', {
+    const response = await strapiCall('/medias', {
       method: 'GET',
       query: {
         'filters[title][$containsi]': searchQuery.value,
