@@ -33,6 +33,8 @@
               <input
                 v-model="searchQuery"
                 @input="searchTMDB"
+                @focus="isSearchFocused = true"
+                @blur="isSearchFocused = false"
                 type="text"
                 placeholder="Type to search movies and TV shows from TMDB..."
                 class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
@@ -65,31 +67,31 @@
             <div v-if="searchResults.length > 0" class="mt-3 max-h-64 overflow-y-auto border border-gray-200 rounded-lg bg-white shadow-sm">
               <div
                 v-for="media in searchResults"
-                :key="`${media.type}-${media.id}`"
+                :key="`${media.media_type || media.type}-${media.id}`"
                 @click="selectTMDBMedia(media)"
                 class="flex items-center gap-3 p-3 hover:bg-gray-50 cursor-pointer border-b border-gray-100 last:border-b-0"
               >
                 <img 
-                  :src="media.poster_url || '/default-poster.jpg'" 
-                  :alt="media.title"
+                  :src="media.poster_url"
+                  :alt="media.title || media.name"
                   class="w-12 h-18 object-cover rounded shadow-sm"
                   @error="handleImageError"
                 />
                 <div class="flex-1 min-w-0">
-                  <h4 class="font-medium text-gray-900 truncate">{{ media.title }}</h4>
+                  <h4 class="font-medium text-gray-900 truncate">{{ media.title || media.name }}</h4>
                   <p class="text-sm text-gray-500">
-                    {{ media.type === 'tv' ? 'TV Series' : 'Movie' }} • {{ getYear(media.release_date) }}
+                    {{ (media.media_type === 'tv' || media.type === 'tv') ? 'TV Series' : 'Movie' }} • {{ getYear(media.release_date || media.first_air_date) }}
                   </p>
                   <p class="text-xs text-gray-400 truncate mt-1" v-if="media.overview">
                     {{ media.overview }}
                   </p>
                   <div class="flex items-center gap-2 mt-1">
-                    <div class="flex items-center gap-1" v-if="media.rating > 0">
+                    <div class="flex items-center gap-1" v-if="media.vote_average > 0">
                       <Icon name="mdi:star" class="w-3 h-3 text-yellow-500" />
-                      <span class="text-xs text-gray-500">{{ media.rating.toFixed(1) }}</span>
+                      <span class="text-xs text-gray-500">{{ media.vote_average.toFixed(1) }}</span>
                     </div>
-                    <div v-if="media.genres && media.genres.length > 0" class="text-xs text-gray-400">
-                      {{ media.genres.slice(0, 2).join(', ') }}
+                    <div v-if="media.genre_ids && media.genre_ids.length > 0" class="text-xs text-gray-400">
+                      Genre IDs: {{ media.genre_ids.slice(0, 2).join(', ') }}
                     </div>
                   </div>
                 </div>
@@ -97,7 +99,7 @@
             </div>
 
             <!-- No Results -->
-            <div v-if="searchQuery && searchResults.length === 0 && !searching && hasSearched" class="mt-2 p-3 text-center text-gray-500 border border-gray-200 rounded-lg">
+            <div v-if="searchQuery && searchResults.length === 0 && !searching && hasSearched"  class="mt-2 p-3 text-center text-gray-500 border border-gray-200 rounded-lg">
               No results found for "{{ searchQuery }}". Try a different search term.
             </div>
 
@@ -117,7 +119,7 @@
             <div class="flex-1">
               <h4 class="font-semibold text-gray-900">{{ selectedMedia.title }}</h4>
               <p class="text-sm text-gray-500">
-                {{ selectedMedia.type === 'tv_series' ? 'TV Series' : 'Movie' }} • {{ new Date(selectedMedia.releaseDate).getFullYear() }}
+                {{ selectedMedia.type === 'tv_series' ? 'TV Series' : 'Movie' }} • {{ selectedMedia.releaseDate ? new Date(selectedMedia.releaseDate).getFullYear() : 'Unknown' }}
               </p>
             </div>
             <button 
@@ -288,6 +290,7 @@ interface MediaItem {
   overview?: string
   genres?: string[]
   rating?: number
+  tmdbData?: any // Store the full TMDB response for submission
 }
 
 interface JournalEntry {
@@ -332,6 +335,7 @@ const searching = ref(false)
 const hasSearched = ref(false)
 const searchError = ref('')
 const searchType = ref('multi')
+const isSearchFocused = ref(false)
 const searchFilters = [
   { label: 'All', value: 'multi' },
   { label: 'Movies', value: 'movie' },
@@ -424,27 +428,31 @@ const selectTMDBMedia = async (media: any) => {
   searchError.value = ''
   
   try {
-    const response: any = await strapiCall(`/journal-entries/tmdb/details/${media.type}/${media.id}`)
-    
-    // Transform TMDB response to MediaItem format
+    // Store the raw TMDB data for submission
+    const mediaType = media.media_type || media.type
     selectedMedia.value = {
-      id: response.id,
-      title: response.title || response.name,
-      type: media.type === 'tv' ? 'tv_series' : 'movies',
-      poster_path: response.poster_path,
-      releaseDate: response.release_date || response.first_air_date,
-      tmdbId: response.id,
-      tmdbType: media.type,
-      overview: response.overview,
-      genres: response.genres?.map((g: any) => g.name) || [],
-      rating: response.vote_average || 0
-    } as MediaItem
+      id: media.id, // This is the TMDB ID
+      title: media.title || media.name,
+      type: mediaType === 'tv' ? 'tv_series' : 'movies',
+      poster_path: media.poster_url,
+      releaseDate: media.release_date || media.first_air_date,
+      tmdbId: media.id,
+      tmdbType: mediaType,
+      overview: media.overview,
+      genres: [], // Will be populated from full details if needed
+      rating: media.vote_average || 0,
+      // Store the full TMDB data for submission
+      tmdbData: media
+    } as MediaItem & { tmdbData: any }
     
+    // Clear search state after selection
     searchResults.value = []
-    searchQuery.value = media.title || media.name
+    searchQuery.value = ''
+    hasSearched.value = false
+    isSearchFocused.value = false
   } catch (error) {
-    console.error('Error getting TMDB details:', error)
-    searchError.value = 'Failed to get movie/TV show details. Please try again.'
+    console.error('Error selecting TMDB media:', error)
+    searchError.value = 'Failed to select movie/TV show. Please try again.'
   } finally {
     searching.value = false
   }
@@ -465,29 +473,39 @@ const handleSubmit = async () => {
   if (!selectedMedia.value) return
 
   try {
-    // If we have a TMDB media item, use the special endpoint
-    if (selectedMedia.value.tmdbId && selectedMedia.value.tmdbType) {
-      const entryData = {
-        ...form.value,
-        tmdbId: selectedMedia.value.tmdbId,
-        tmdbType: selectedMedia.value.tmdbType
+    // For TMDB entries, submit the full TMDB data for upsert operation
+    const entryData = {
+      ...form.value,
+      // Include the full TMDB data for upsert
+      tmdb: {
+        id: selectedMedia.value.tmdbId,
+        type: selectedMedia.value.tmdbType,
+        title: selectedMedia.value.title,
+        overview: selectedMedia.value.overview,
+        poster_path: selectedMedia.value.poster_path,
+        release_date: selectedMedia.value.releaseDate,
+        vote_average: selectedMedia.value.rating,
+        // Include the full raw TMDB data if available
+        ...((selectedMedia.value as any).tmdbData || {})
       }
-      
-      const response: any = await strapiCall('/journal-entries/tmdb/create', {
+    }
+    
+    let response: any
+    if (props.entry) {
+      // Update existing entry
+      response = await strapiCall(`/journal-entries/${props.entry.id}`, {
+        method: 'PUT',
+        body: { data: entryData }
+      })
+    } else {
+      // Create new entry with TMDB upsert
+      response = await strapiCall('/journal-entries/tmdb/create', {
         method: 'POST',
         body: entryData
       })
-      
-      emit('save', response.data)
-    } else {
-      // For existing media items, use the regular endpoint
-      const entryData = {
-        ...form.value,
-        media_item: selectedMedia.value.id
-      }
-      
-      emit('save', entryData)
     }
+    
+    emit('save', response.data)
   } catch (error) {
     console.error('Error saving journal entry:', error)
     searchError.value = 'Failed to save journal entry. Please try again.'
