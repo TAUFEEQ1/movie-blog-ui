@@ -43,8 +43,7 @@
           <div class="xl:col-span-2 space-y-8">
             <!-- Journal Entry Widget -->
             <JournalEntryWidget 
-              @entry-updated="handleJournalUpdate"
-              @status-changed="handleStatusChange"
+              ref="journalWidget"
             />
 
             <!-- Trending Now -->
@@ -351,15 +350,20 @@ const viewAllRecommended = () => {
 }
 
 // Journal Integration Methods
+const journalWidget = ref<{ refetch?: () => void } | null>(null)
+
 const openJournalModal = (movie: any) => {
   console.log('Adding to journal:', movie.title)
-  // Could open a journal modal or navigate to journal page
-  // For now, just log the action
+  // Navigate to journal page to add entry for this movie
+  navigateTo('/journal?add=true&movie=' + encodeURIComponent(movie.title))
 }
 
 const handleJournalUpdate = (entry: any) => {
   console.log('Journal entry updated:', entry)
-  // Refresh journal data or update local state
+  // Refresh the journal widget to show latest entries
+  if (journalWidget.value?.refetch) {
+    journalWidget.value.refetch()
+  }
 }
 
 const handleStatusChange = (status: string) => {
