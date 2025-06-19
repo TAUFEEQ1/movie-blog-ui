@@ -493,11 +493,15 @@ const closeModal = () => {
   editingEntry.value = null
 }
 
-const saveEntry = async (entryData: Partial<JournalEntry>) => {
+const saveEntry = async (entryData: Partial<JournalEntry> | JournalEntry) => {
   if (!user.value) return
   
   try {
-    if (editingEntry.value) {
+    // If entryData has an id, it means it was already created via TMDB endpoint
+    if ('id' in entryData && entryData.id) {
+      // Entry was already created by the modal, just add it to our list
+      journalEntries.value.unshift(entryData as JournalEntry)
+    } else if (editingEntry.value) {
       // Update existing entry
       const response = await strapiCall(`/journal-entries/${editingEntry.value.id}`, {
         method: 'PUT',
@@ -508,7 +512,7 @@ const saveEntry = async (entryData: Partial<JournalEntry>) => {
         journalEntries.value[index] = (response as any).data
       }
     } else {
-      // Create new entry
+      // Create new entry with regular data
       const response = await strapiCall('/journal-entries', {
         method: 'POST',
         body: {
