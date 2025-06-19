@@ -1,25 +1,22 @@
 <template>
   <div class="bg-white rounded-2xl p-6">
-    <h3 class="text-xl font-bold text-gray-900 mb-6">Friends activity</h3>
+    <h3 class="text-xl font-bold text-gray-900 mb-6">Recent Activity</h3>
     
     <div class="space-y-4">
       <div 
-        v-for="activity in friendsActivity" 
+        v-for="activity in recentActivity" 
         :key="activity.id"
         class="flex items-center gap-3"
       >
-        <!-- Friend Avatar -->
-        <img 
-          :src="activity.user.avatar" 
-          :alt="activity.user.name"
-          class="w-10 h-10 rounded-full flex-shrink-0"
-        />
+        <!-- Activity Icon -->
+        <div class="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0" :class="getActivityIconBg(activity.action)">
+          <Icon :name="getActivityIcon(activity.action)" class="w-5 h-5 text-white" />
+        </div>
         
         <!-- Activity Info -->
         <div class="flex-1 min-w-0">
           <p class="text-sm text-gray-900">
-            <span class="font-medium">{{ activity.user.name }}</span>
-            <span class="text-gray-600"> {{ activity.action }} </span>
+            <span class="text-gray-600">{{ getActivityDescription(activity.action) }} </span>
             <span class="font-medium text-blue-600">{{ activity.content.title }}</span>
           </p>
           <p class="text-xs text-gray-500">{{ formatTimeAgo(activity.timestamp) }}</p>
@@ -35,22 +32,16 @@
 
     <!-- Empty State -->
     <div 
-      v-if="friendsActivity.length === 0"
+      v-if="recentActivity.length === 0"
       class="text-center py-8"
     >
-      <Icon name="mdi:account-group-outline" class="w-12 h-12 text-gray-300 mx-auto mb-3" />
-      <p class="text-gray-500">No recent friend activity</p>
+      <Icon name="mdi:clock-outline" class="w-12 h-12 text-gray-300 mx-auto mb-3" />
+      <p class="text-gray-500">No recent activity</p>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-interface User {
-  id: number
-  name: string
-  avatar: string
-}
-
 interface Content {
   id: number
   title: string
@@ -59,21 +50,15 @@ interface Content {
 
 interface Activity {
   id: number
-  user: User
   action: string
   content: Content
   timestamp: Date
 }
 
-const friendsActivity = ref<Activity[]>([
+const recentActivity = ref<Activity[]>([
   {
     id: 1,
-    user: {
-      id: 1,
-      name: "James Banistor",
-      avatar: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=40&h=40&fit=crop&crop=face"
-    },
-    action: "is now watching",
+    action: "watched",
     content: {
       id: 1,
       title: "Stranger Things",
@@ -83,12 +68,7 @@ const friendsActivity = ref<Activity[]>([
   },
   {
     id: 2,
-    user: {
-      id: 2,
-      name: "Jenna Barbera",
-      avatar: "https://images.unsplash.com/photo-1494790108755-2616b612b4f0?w=40&h=40&fit=crop&crop=face"
-    },
-    action: "is now watching",
+    action: "added_to_journal",
     content: {
       id: 2,
       title: "You",
@@ -98,12 +78,7 @@ const friendsActivity = ref<Activity[]>([
   },
   {
     id: 3,
-    user: {
-      id: 3,
-      name: "Sara Cameron",
-      avatar: "https://images.unsplash.com/photo-1517841905240-472988babdf9?w=40&h=40&fit=crop&crop=face"
-    },
-    action: "is now watching",
+    action: "planned_to_watch",
     content: {
       id: 3,
       title: "The Witcher",
@@ -113,12 +88,7 @@ const friendsActivity = ref<Activity[]>([
   },
   {
     id: 4,
-    user: {
-      id: 4,
-      name: "Jonathan Paul",
-      avatar: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=40&h=40&fit=crop&crop=face"
-    },
-    action: "is now watching",
+    action: "rated",
     content: {
       id: 4,
       title: "Dune",
@@ -146,14 +116,61 @@ const formatTimeAgo = (timestamp: Date) => {
   }
 }
 
+const getActivityDescription = (action: string) => {
+  switch (action) {
+    case 'watched':
+      return 'Finished watching'
+    case 'added_to_journal':
+      return 'Added to journal'
+    case 'planned_to_watch':
+      return 'Added to watchlist'
+    case 'rated':
+      return 'Rated'
+    default:
+      return action
+  }
+}
+
+const getActivityIcon = (action: string) => {
+  switch (action) {
+    case 'watched':
+      return 'mdi:check-circle'
+    case 'added_to_journal':
+      return 'mdi:notebook-plus'
+    case 'planned_to_watch':
+      return 'mdi:bookmark-plus'
+    case 'rated':
+      return 'mdi:star'
+    default:
+      return 'mdi:circle'
+  }
+}
+
+const getActivityIconBg = (action: string) => {
+  switch (action) {
+    case 'watched':
+      return 'bg-green-500'
+    case 'added_to_journal':
+      return 'bg-blue-500'
+    case 'planned_to_watch':
+      return 'bg-yellow-500'
+    case 'rated':
+      return 'bg-purple-500'
+    default:
+      return 'bg-gray-400'
+  }
+}
+
 const getStatusColor = (action: string) => {
   switch (action) {
-    case 'is now watching':
+    case 'watched':
       return 'bg-green-500'
-    case 'finished watching':
+    case 'added_to_journal':
       return 'bg-blue-500'
-    case 'added to watchlist':
+    case 'planned_to_watch':
       return 'bg-yellow-500'
+    case 'rated':
+      return 'bg-purple-500'
     default:
       return 'bg-gray-400'
   }

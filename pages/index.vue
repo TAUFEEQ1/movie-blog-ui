@@ -1,24 +1,52 @@
 <template>
   <div class="min-h-screen bg-gray-50">
-    <div class="flex gap-6 p-6">
+    <!-- Mobile Menu Overlay -->
+    <div 
+      v-if="showMobileMenu" 
+      class="fixed inset-0 bg-black bg-opacity-50 z-40 lg:hidden"
+      @click="showMobileMenu = false"
+    ></div>
+
+    <div class="flex gap-0 lg:gap-6 p-3 lg:p-6">
+      <!-- Mobile Menu Toggle -->
+      <button
+        @click="showMobileMenu = !showMobileMenu"
+        class="fixed top-4 left-4 z-50 lg:hidden p-2 bg-white rounded-lg shadow-md"
+      >
+        <Icon name="mdi:menu" class="w-6 h-6 text-gray-700" />
+      </button>
+
       <!-- Sidebar -->
-      <Sidebar />
+      <div :class="[
+        'fixed lg:relative inset-y-0 left-0 z-40 lg:z-0 transform transition-transform duration-300 ease-in-out lg:transform-none',
+        showMobileMenu ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
+      ]">
+        <Sidebar @close-mobile="showMobileMenu = false" />
+      </div>
       
       <!-- Main Content -->
-      <div class="flex-1">
+      <div class="flex-1 w-full lg:ml-0">
         <!-- Top Navigation -->
         <TopBar 
-          @tab-change="handleTabChange"
           @search="handleSearch"
         />
 
         <!-- Hero Section -->
-        <HeroSection @play-trailer="openVideoModal" />
+        <HeroSection 
+          @play-trailer="openVideoModal"
+          @add-to-journal="openJournalModal"
+        />
 
         <!-- Content Sections -->
-        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div class="grid grid-cols-1 xl:grid-cols-3 gap-6">
           <!-- Main Movie Sections -->
-          <div class="lg:col-span-2 space-y-8">
+          <div class="xl:col-span-2 space-y-8">
+            <!-- Journal Entry Widget -->
+            <JournalEntryWidget 
+              @entry-updated="handleJournalUpdate"
+              @status-changed="handleStatusChange"
+            />
+
             <!-- Trending Now -->
             <MovieSection 
               title="Trending now"
@@ -76,7 +104,15 @@
             <!-- Continue Watching -->
             <ContinueWatchingWidget @resume-watching="resumeWatching" />
             
-            <!-- Friends Activity -->
+            <!-- Paused Shows -->
+            <PausedShowsWidget 
+              @resume-show="resumeShow"
+              @status-updated="handleShowStatusUpdate"
+              @edit-show="editShow"
+              @resume-all="resumeAllShows"
+            />
+            
+            <!-- Recent Activity -->
             <StrapiStatus />
           </div>
         </div>
@@ -100,6 +136,9 @@ definePageMeta({
 })
 
 const { user } = useAuth()
+
+// Mobile Menu State
+const showMobileMenu = ref(false)
 
 // Video Modal State
 interface VideoInfo {
@@ -263,11 +302,6 @@ const recommendedMovies = ref<Movie[]>([
 ])
 
 // Event Handlers
-const handleTabChange = (tab: string) => {
-  console.log('Tab changed to:', tab)
-  // Implement tab filtering logic
-}
-
 const handleSearch = (query: string) => {
   console.log('Searching for:', query)
   // Implement search functionality
@@ -314,5 +348,43 @@ const viewAllTopMovies = () => {
 
 const viewAllRecommended = () => {
   navigateTo('/movies/recommended')
+}
+
+// Journal Integration Methods
+const openJournalModal = (movie: any) => {
+  console.log('Adding to journal:', movie.title)
+  // Could open a journal modal or navigate to journal page
+  // For now, just log the action
+}
+
+const handleJournalUpdate = (entry: any) => {
+  console.log('Journal entry updated:', entry)
+  // Refresh journal data or update local state
+}
+
+const handleStatusChange = (status: string) => {
+  console.log('Journal status filter changed to:', status)
+  // Update UI based on status filter
+}
+
+// Paused Shows Methods
+const resumeShow = (show: any) => {
+  console.log('Resuming show:', show.title)
+  openVideoModal(show.trailerUrl || `https://www.youtube.com/watch?v=dQw4w9WgXcQ`)
+}
+
+const handleShowStatusUpdate = (data: any) => {
+  console.log('Show status updated:', data.show.title, 'to', data.status)
+  // Update local state or refresh data
+}
+
+const editShow = (show: any) => {
+  console.log('Editing show:', show.title)
+  // Open edit modal or navigate to edit page
+}
+
+const resumeAllShows = (shows: any[]) => {
+  console.log('Resuming all shows:', shows.length)
+  // Implement bulk resume functionality
 }
 </script>

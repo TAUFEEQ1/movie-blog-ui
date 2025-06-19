@@ -1,21 +1,10 @@
 <template>
   <header class="flex items-center justify-between mb-8">
-    <!-- Navigation Tabs -->
-    <nav class="flex items-center gap-8">
-      <button 
-        v-for="tab in tabs" 
-        :key="tab.name"
-        @click="activeTab = tab.name"
-        class="text-lg font-medium transition-colors relative"
-        :class="activeTab === tab.name ? 'text-gray-900' : 'text-gray-500 hover:text-gray-700'"
-      >
-        {{ tab.name }}
-        <div 
-          v-if="activeTab === tab.name"
-          class="absolute -bottom-1 left-0 right-0 h-0.5 bg-blue-600 rounded-full"
-        ></div>
-      </button>
-    </nav>
+    <!-- Page Title -->
+    <div>
+      <h1 class="text-2xl font-bold text-gray-900">Dashboard</h1>
+      <p class="text-gray-600">Welcome back! Here's what's happening with your movies and shows.</p>
+    </div>
 
     <!-- Search and Notifications -->
     <div class="flex items-center gap-4">
@@ -25,8 +14,8 @@
         <input 
           v-model="searchQuery"
           type="text" 
-          placeholder="Search" 
-          class="pl-10 pr-4 py-2 w-80 bg-gray-100 rounded-xl border-0 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all"
+          placeholder="Search movies, shows..." 
+          class="pl-10 pr-4 py-2 w-64 lg:w-80 bg-gray-100 rounded-xl border-0 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all"
           @keyup.enter="performSearch"
         />
       </div>
@@ -64,27 +53,11 @@
 </template>
 
 <script setup lang="ts">
-interface Tab {
-  name: string
-  value: string
-}
-
-const tabs: Tab[] = [
-  { name: 'New', value: 'new' },
-  { name: 'Series', value: 'series' },
-  { name: 'Movies', value: 'movies' },
-  { name: 'TV shows', value: 'tv-shows' }
-]
-
-const activeTab = ref('New')
+// State
 const searchQuery = ref('')
 const showUserMenu = ref(false)
 
-const emit = defineEmits(['tab-change', 'search'])
-
-watch(activeTab, (newTab) => {
-  emit('tab-change', newTab)
-})
+const emit = defineEmits(['search'])
 
 const performSearch = () => {
   if (searchQuery.value.trim()) {

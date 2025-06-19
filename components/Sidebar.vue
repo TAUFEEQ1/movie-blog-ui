@@ -1,11 +1,22 @@
 <template>
-  <aside class="w-64 bg-white rounded-2xl p-6 h-fit sticky top-6">
-    <!-- Logo -->
-    <div class="flex items-center gap-2 mb-8">
-      <div class="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
-        <Icon name="mdi:film" class="w-5 h-5 text-white" />
+  <aside class="w-64 bg-white rounded-none lg:rounded-2xl p-6 h-screen lg:h-fit lg:sticky lg:top-6 shadow-lg lg:shadow-none">
+    <!-- Mobile Close Button -->
+    <div class="flex items-center justify-between mb-6 lg:mb-8">
+      <!-- Logo -->
+      <div class="flex items-center gap-2">
+        <div class="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
+          <Icon name="mdi:film" class="w-5 h-5 text-white" />
+        </div>
+        <span class="text-xl font-bold text-gray-900">FilScreen</span>
       </div>
-      <span class="text-xl font-bold text-gray-900">FilScreen</span>
+      
+      <!-- Close button for mobile -->
+      <button
+        @click="$emit('close-mobile')"
+        class="lg:hidden p-2 hover:bg-gray-100 rounded-lg transition-colors"
+      >
+        <Icon name="mdi:close" class="w-5 h-5 text-gray-600" />
+      </button>
     </div>
 
     <!-- Navigation -->
@@ -14,6 +25,7 @@
         v-for="item in navigationItems" 
         :key="item.name"
         :to="item.path"
+        @click="$emit('close-mobile')"
         class="flex items-center gap-3 px-4 py-3 rounded-xl transition-colors"
         :class="isActive(item.path) ? 'bg-blue-50 text-blue-600' : 'text-gray-600 hover:bg-gray-50'"
       >
@@ -37,8 +49,8 @@
           class="w-10 h-10 rounded-full"
         />
         <div>
-          <div class="font-medium text-gray-900">John Doe</div>
-          <div class="text-sm text-gray-500">Premium Member</div>
+          <div class="font-medium text-gray-900">{{ user?.username || 'User' }}</div>
+          <div class="text-sm text-gray-500">{{ user?.email || 'Premium Member' }}</div>
         </div>
       </div>
       
@@ -54,7 +66,19 @@
 </template>
 
 <script setup lang="ts">
-const route = useRoute()
+const { logout: authLogout, user } = useAuth()
+const router = useRouter()
+
+// Define emits
+const emit = defineEmits(['close-mobile'])
+
+// Get current route path safely
+const currentPath = computed(() => {
+  if (process.client) {
+    return useRoute().path
+  }
+  return '/'
+})
 
 interface NavigationItem {
   name: string
@@ -65,22 +89,20 @@ interface NavigationItem {
 
 const navigationItems: NavigationItem[] = [
   { name: 'Home', path: '/', icon: 'mdi:home' },
+  { name: 'My Journal', path: '/journal', icon: 'mdi:notebook' },
   { name: 'Categories', path: '/categories', icon: 'mdi:grid' },
   { name: 'Favorites', path: '/favorites', icon: 'mdi:heart' },
-  { name: 'Downloads', path: '/downloads', icon: 'mdi:download', badge: 1 },
-  { name: 'Friends', path: '/friends', icon: 'mdi:account-group' },
-  { name: 'Community', path: '/community', icon: 'mdi:forum', badge: 2 },
+  { name: 'Watchlist', path: '/watchlist', icon: 'mdi:bookmark' },
   { name: 'History', path: '/history', icon: 'mdi:history' },
   { name: 'Settings', path: '/settings', icon: 'mdi:cog' }
 ]
 
 const isActive = (path: string) => {
-  return route.path === path
+  return currentPath.value === path
 }
 
-const logout = () => {
-  // Logout logic
+const logout = async () => {
   console.log('Logging out...')
-  navigateTo('/login')
+  await authLogout()
 }
 </script>

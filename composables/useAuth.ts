@@ -163,15 +163,50 @@ export const useAuth = () => {
 
   // Logout function
   const logout = async () => {
-    // Clear local state and localStorage
-    token.value = null
-    user.value = null
-    
-    if (import.meta.client) {
-      localStorage.removeItem('strapi-jwt')
+    try {
+      console.log('Starting logout process...')
+      
+      // Clear local state first
+      token.value = null
+      user.value = null
+      
+      // Clear localStorage only on client side
+      if (import.meta.client) {
+        try {
+          localStorage.removeItem('strapi-jwt')
+          console.log('Token removed from localStorage')
+        } catch (localStorageError) {
+          console.warn('Failed to remove token from localStorage:', localStorageError)
+        }
+      }
+      
+      console.log('User logged out successfully')
+      
+      // Navigate to login page
+      await navigateTo('/login')
+    } catch (error) {
+      console.error('Error during logout:', error)
+      // Even if there's an error, ensure state is cleared
+      token.value = null
+      user.value = null
+      if (import.meta.client) {
+        try {
+          localStorage.removeItem('strapi-jwt')
+        } catch (localStorageError) {
+          console.warn('Failed to clear localStorage during error recovery:', localStorageError)
+        }
+      }
+      // Still navigate to login even if there was an error
+      try {
+        await navigateTo('/login')
+      } catch (navError) {
+        console.error('Failed to navigate to login:', navError)
+        // If navigation fails, try using window.location as fallback
+        if (import.meta.client) {
+          window.location.href = '/login'
+        }
+      }
     }
-    
-    await navigateTo('/login')
   }
 
   // Check if user is authenticated
