@@ -454,8 +454,10 @@ const fetchJournalEntries = async () => {
     const response = await strapiCall('/journal-entries', {
       method: 'GET',
       query: {
-        populate: 'media_item,user',
-        'filters[user][id]': user.value.id,
+        'populate[media_item]': true,
+        'populate[user]': true,
+        // Temporarily commented out user filter until existing entries have user relationships
+        // 'filters[user][id]': user.value.id,
         sort: 'updatedAt:desc'
       }
     }) as { data: JournalEntry[] }
