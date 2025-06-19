@@ -11,9 +11,7 @@
       >
         <!-- Header -->
         <div class="flex items-center justify-between p-6 border-b">
-          <h2 class="text-xl font-bold text-gray-900">
-            {{ entry ? 'Edit Journal Entry' : 'Add Journal Entry' }}
-          </h2>
+          <h2 class="text-xl font-bold text-gray-900">Add Journal Entry</h2>
           <button 
             @click="closeModal"
             class="p-2 text-gray-400 hover:text-gray-600 transition-colors"
@@ -25,7 +23,7 @@
         <!-- Form -->
         <form @submit.prevent="handleSubmit" class="p-6 space-y-6">
           <!-- Media Search -->
-          <div v-if="!entry">
+          <div>
             <label class="block text-sm font-medium text-gray-700 mb-2">
               Search for Movie/TV Show
             </label>
@@ -34,7 +32,7 @@
                 v-model="searchQuery"
                 @input="searchTMDB"
                 @focus="isSearchFocused = true"
-                @blur="isSearchFocused = false"
+                @blur="handleSearchBlur"
                 type="text"
                 placeholder="Type to search movies and TV shows from TMDB..."
                 class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
@@ -99,7 +97,7 @@
             </div>
 
             <!-- No Results -->
-            <div v-if="searchQuery && searchResults.length === 0 && !searching && hasSearched"  class="mt-2 p-3 text-center text-gray-500 border border-gray-200 rounded-lg">
+            <div v-if="searchQuery && searchResults.length === 0 && !searching && hasSearched && isSearchFocused" class="mt-2 p-3 text-center text-gray-500 border border-gray-200 rounded-lg">
               No results found for "{{ searchQuery }}". Try a different search term.
             </div>
 
@@ -112,7 +110,7 @@
           <!-- Selected Media -->
           <div v-if="selectedMedia" class="flex items-center gap-4 p-4 bg-gray-50 rounded-lg">
             <img 
-              :src="selectedMedia.poster_path || '/default-poster.jpg'" 
+              :src="selectedMedia.tmdbData.poster_url"
               :alt="selectedMedia.title"
               class="w-16 h-24 object-cover rounded"
             />
@@ -123,15 +121,15 @@
               </p>
             </div>
             <button 
-              v-if="!entry"
               type="button" 
-              @click="selectedMedia = null" 
+              @click="clearSelectedMedia" 
               class="p-2 text-gray-400 hover:text-gray-600"
             >
               <Icon name="mdi:close" class="w-5 h-5" />
             </button>
           </div>
 
+          <!-- Rest of the form fields -->
           <!-- Custom Title -->
           <div>
             <label class="block text-sm font-medium text-gray-700 mb-2">
@@ -269,7 +267,7 @@
               :disabled="!selectedMedia || !form.watch_status"
               class="px-6 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-300 text-white rounded-lg font-medium transition-colors"
             >
-              {{ entry ? 'Update Entry' : 'Add Entry' }}
+              Add Entry
             </button>
           </div>
         </form>
@@ -279,38 +277,21 @@
 </template>
 
 <script setup lang="ts">
-interface MediaItem {
+interface TMDBMedia {
   id: number
   title: string
-  type: 'movies' | 'tv_series'
+  type: 'tv_series' | 'movies'
   poster_path: string
   releaseDate: string
-  trailerUrl?: string
-  tmdbId?: number
-  tmdbType?: string
+  tmdbId: number
+  tmdbType: string
   overview?: string
-  genres?: string[]
   rating?: number
-  tmdbData?: any // Store the full TMDB response for submission
-}
-
-interface JournalEntry {
-  id: number
-  title?: string
-  watch_status: 'watched' | 'rewatched' | 'planned_to_watch' | 'dropped' | 'paused'
-  my_rating?: number
-  watched_date?: string
-  start_date?: string
-  end_date?: string
-  season_number?: number
-  notes_reflections?: string
-  media_item: MediaItem
-  user: any
+  tmdbData: any
 }
 
 interface Props {
   isOpen: boolean
-  entry?: JournalEntry | null
 }
 
 const props = defineProps<Props>()
@@ -331,7 +312,7 @@ const form = ref({
 // Media search - TMDB integration
 const searchQuery = ref('')
 const searchResults = ref<any[]>([])
-const selectedMedia = ref<MediaItem | null>(null)
+const selectedMedia = ref<TMDBMedia | null>(null)
 const searching = ref(false)
 const hasSearched = ref(false)
 const searchError = ref('')
@@ -343,7 +324,6 @@ const searchFilters = [
   { label: 'TV Shows', value: 'tv' }
 ]
 
-// Create a typed strapi instance
 const config = useRuntimeConfig()
 
 // Helper function for API calls
@@ -361,35 +341,41 @@ const strapiCall = async (endpoint: string, options: any = {}) => {
   })
 }
 
-// Initialize form when entry prop changes
-watch(() => props.entry, (entry) => {
-  if (entry) {
-    form.value = {
-      title: entry.title || '',
-      watch_status: entry.watch_status,
-      my_rating: entry.my_rating || 5,
-      watched_date: entry.watched_date || '',
-      start_date: entry.start_date || '',
-      end_date: entry.end_date || '',
-      season_number: entry.season_number,
-      notes_reflections: entry.notes_reflections || ''
-    }
-    selectedMedia.value = entry.media_item
-  } else {
-    // Reset form for new entry
-    form.value = {
-      title: '',
-      watch_status: 'planned_to_watch',
-      my_rating: 5,
-      watched_date: '',
-      start_date: '',
-      end_date: '',
-      season_number: undefined,
-      notes_reflections: ''
-    }
-    selectedMedia.value = null
+// Reset form when modal opens
+watch(() => props.isOpen, (isOpen) => {
+  if (isOpen) {
+    resetForm()
   }
-}, { immediate: true })
+})
+
+const resetForm = () => {
+  form.value = {
+    title: '',
+    watch_status: 'planned_to_watch',
+    my_rating: 5,
+    watched_date: '',
+    start_date: '',
+    end_date: '',
+    season_number: undefined,
+    notes_reflections: ''
+  }
+  selectedMedia.value = null
+  clearSearchState()
+}
+
+const clearSearchState = () => {
+  searchQuery.value = ''
+  searchResults.value = []
+  searchError.value = ''
+  hasSearched.value = false
+  searching.value = false
+  isSearchFocused.value = false
+}
+
+const clearSelectedMedia = () => {
+  selectedMedia.value = null
+  clearSearchState()
+}
 
 // Search TMDB
 const searchTMDB = useDebounceFn(async () => {
@@ -404,7 +390,7 @@ const searchTMDB = useDebounceFn(async () => {
   
   try {
     const response: any = await strapiCall(`/journal-entries/tmdb/search?query=${encodeURIComponent(searchQuery.value)}&type=${searchType.value}`)
-    searchResults.value = response.data || [];
+    searchResults.value = response.data || []
     hasSearched.value = true
   } catch (error) {
     console.error('Error searching TMDB:', error)
@@ -423,40 +409,23 @@ watch(searchType, () => {
   }
 })
 
-// Select TMDB media and get details
-const selectTMDBMedia = async (media: any) => {
-  searching.value = true
-  searchError.value = ''
-  
-  try {
-    // Store the raw TMDB data for submission
-    const mediaType = media.media_type || media.type
-    selectedMedia.value = {
-      id: media.id, // This is the TMDB ID
-      title: media.title || media.name,
-      type: mediaType === 'tv' ? 'tv_series' : 'movies',
-      poster_path: media.poster_url,
-      releaseDate: media.release_date || media.first_air_date,
-      tmdbId: media.id,
-      tmdbType: mediaType,
-      overview: media.overview,
-      genres: [], // Will be populated from full details if needed
-      rating: media.vote_average || 0,
-      // Store the full TMDB data for submission
-      tmdbData: media
-    } as MediaItem & { tmdbData: any }
-    
-    // Clear search state after selection
-    searchResults.value = []
-    searchQuery.value = ''
-    hasSearched.value = false
-    isSearchFocused.value = false
-  } catch (error) {
-    console.error('Error selecting TMDB media:', error)
-    searchError.value = 'Failed to select movie/TV show. Please try again.'
-  } finally {
-    searching.value = false
+// Select TMDB media
+const selectTMDBMedia = (media: any) => {
+  const mediaType = media.media_type || media.type
+  selectedMedia.value = {
+    id: media.id,
+    title: media.title || media.name,
+    type: mediaType === 'tv' ? 'tv_series' : 'movies',
+    poster_path: media.poster_path,
+    releaseDate: media.release_date || media.first_air_date,
+    tmdbId: media.id,
+    tmdbType: mediaType,
+    overview: media.overview,
+    rating: media.vote_average || 0,
+    tmdbData: media
   }
+  
+  clearSearchState()
 }
 
 // Helper functions
@@ -470,47 +439,44 @@ const getYear = (dateString: string) => {
   return new Date(dateString).getFullYear()
 }
 
+const getImageUrl = (posterPath: string | null) => {
+  if (!posterPath) return '/default-poster.jpg'
+  if (posterPath.startsWith('http')) return posterPath
+  return `https://image.tmdb.org/t/p/w500${posterPath}`
+}
+
+// Handle search blur with delay to allow for selection clicks
+const handleSearchBlur = () => {
+  setTimeout(() => {
+    isSearchFocused.value = false
+  }, 150)
+}
+
 const handleSubmit = async () => {
   if (!selectedMedia.value) return
 
   try {
-    let response: any
-    if (props.entry) {
-      // Update existing journal entry - only send form data, no TMDB data
-      const updateData = {
-        ...form.value,
-        media_item: selectedMedia.value.id // Use the existing media item ID
+    const entryData = {
+      ...form.value,
+      tmdb: {
+        id: selectedMedia.value.tmdbId,
+        type: selectedMedia.value.tmdbType,
+        title: selectedMedia.value.title,
+        overview: selectedMedia.value.overview,
+        release_date: selectedMedia.value.releaseDate,
+        poster_path: selectedMedia.value.tmdbData.poster_url,
+        vote_average: selectedMedia.value.rating,
+        ...selectedMedia.value.tmdbData
       }
-      
-      response = await strapiCall(`/journal-entries/${props.entry.id}`, {
-        method: 'PUT',
-        body: { data: updateData }
-      })
-    } else {
-      // Create new entry with TMDB upsert operation
-      const entryData = {
-        ...form.value,
-        // Include the full TMDB data for upsert
-        tmdb: {
-          id: selectedMedia.value.tmdbId,
-          type: selectedMedia.value.tmdbType,
-          title: selectedMedia.value.title,
-          overview: selectedMedia.value.overview,
-          poster_path: selectedMedia.value.poster_path,
-          release_date: selectedMedia.value.releaseDate,
-          vote_average: selectedMedia.value.rating,
-          // Include the full raw TMDB data if available
-          ...((selectedMedia.value as any).tmdbData || {})
-        }
-      }
-      
-      response = await strapiCall('/journal-entries/tmdb/create', {
-        method: 'POST',
-        body: entryData
-      })
     }
     
+    const response: any = await strapiCall('/journal-entries/tmdb/create', {
+      method: 'POST',
+      body: entryData
+    })
+    
     emit('save', response.data)
+    closeModal()
   } catch (error) {
     console.error('Error saving journal entry:', error)
     searchError.value = 'Failed to save journal entry. Please try again.'
@@ -518,13 +484,7 @@ const handleSubmit = async () => {
 }
 
 const closeModal = () => {
-  // Reset search state
-  searchQuery.value = ''
-  searchResults.value = []
-  searchError.value = ''
-  hasSearched.value = false
-  searching.value = false
-  
+  resetForm()
   emit('close')
 }
 

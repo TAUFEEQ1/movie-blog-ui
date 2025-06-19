@@ -258,9 +258,17 @@
       </div>
     </div>
 
-    <!-- Add/Edit Modal -->
-    <JournalEntryModal 
-      :is-open="showAddModal || !!editingEntry"
+    <!-- Add Modal -->
+    <AddJournalEntryModal 
+      :is-open="showAddModal"
+      @close="closeModal"
+      @save="saveEntry"
+    />
+
+    <!-- Edit Modal -->
+    <EditJournalEntryModal
+      v-if="editingEntry"
+      :is-open="!!editingEntry"
       :entry="editingEntry"
       @close="closeModal"
       @save="saveEntry"
@@ -285,6 +293,7 @@ definePageMeta({
 
 interface MediaItem {
   id: number
+  documentId?: string
   title: string
   type: 'movies' | 'tv_series'
   poster_path: string
@@ -294,6 +303,7 @@ interface MediaItem {
 
 interface JournalEntry {
   id: number
+  documentId?: string
   title?: string
   watch_status: 'watched' | 'rewatched' | 'planned_to_watch' | 'dropped' | 'paused'
   my_rating?: number
@@ -461,6 +471,7 @@ const fetchJournalEntries = async () => {
         sort: 'updatedAt:desc'
       }
     }) as { data: JournalEntry[] }
+    
     journalEntries.value = response.data || []
   } catch (error) {
     console.error('Error fetching journal entries:', error)
@@ -481,7 +492,9 @@ const deleteEntry = async (entry: JournalEntry) => {
   if (!confirm('Are you sure you want to delete this entry?')) return
   
   try {
-    await strapiCall(`/journal-entries/${entry.id}`, {
+    // Use documentId for the API call, fallback to numeric id
+    const entryId = entry.documentId || entry.id
+    await strapiCall(`/journal-entries/${entryId}`, {
       method: 'DELETE'
     })
     journalEntries.value = journalEntries.value.filter(e => e.id !== entry.id)
@@ -499,30 +512,17 @@ const saveEntry = async (entryData: Partial<JournalEntry> | JournalEntry) => {
   if (!user.value) return
   
   try {
-    // If entryData has an id, it means it was already created via TMDB endpoint
-    if ('id' in entryData && entryData.id) {
-      // Entry was already created by the modal, just add it to our list
-      journalEntries.value.unshift(entryData as JournalEntry)
-    } else if (editingEntry.value) {
-      // Update existing entry
-      const response = await strapiCall(`/journal-entries/${editingEntry.value.id}`, {
-        method: 'PUT',
-        body: entryData
-      })
+    if (editingEntry.value) {
+      // Update existing entry - the edit modal already handled the API call
+      // Just update the entry in our local array
       const index = journalEntries.value.findIndex(e => e.id === editingEntry.value!.id)
       if (index !== -1) {
-        journalEntries.value[index] = (response as any).data
+        journalEntries.value[index] = entryData as JournalEntry
       }
     } else {
-      // Create new entry with regular data
-      const response = await strapiCall('/journal-entries', {
-        method: 'POST',
-        body: {
-          ...entryData,
-          user: user.value.id
-        }
-      })
-      journalEntries.value.unshift((response as any).data)
+      // Add new entry - the add modal already handled the API call via TMDB endpoint
+      // Just add it to our local array
+      journalEntries.value.unshift(entryData as JournalEntry)
     }
     closeModal()
   } catch (error) {
