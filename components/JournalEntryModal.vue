@@ -399,7 +399,7 @@ const searchTMDB = useDebounceFn(async () => {
   
   try {
     const response: any = await strapiCall(`/journal-entries/tmdb/search?query=${encodeURIComponent(searchQuery.value)}&type=${searchType.value}`)
-    searchResults.value = response.results || []
+    searchResults.value = response.data || [];
     hasSearched.value = true
   } catch (error) {
     console.error('Error searching TMDB:', error)
