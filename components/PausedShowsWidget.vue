@@ -5,10 +5,29 @@
         <Icon name="mdi:pause-circle" class="w-5 h-5 text-orange-600" />
         Paused Shows
       </h2>
-      <div class="text-sm text-gray-500">{{ pausedShows.length }} shows</div>
+      <div v-if="!loading" class="text-sm text-gray-500">{{ pausedShows.length }} shows</div>
     </div>
     
-    <div class="space-y-4">
+    <!-- Loading State -->
+    <div v-if="loading" class="space-y-4">
+      <div v-for="i in 3" :key="i" class="border border-gray-100 rounded-lg p-4 animate-pulse">
+        <div class="flex items-start gap-3">
+          <div class="w-12 h-16 bg-gray-200 rounded flex-shrink-0"></div>
+          <div class="flex-1 space-y-3">
+            <div class="h-4 bg-gray-200 rounded w-3/4"></div>
+            <div class="h-3 bg-gray-200 rounded w-1/2"></div>
+            <div class="h-2 bg-gray-200 rounded w-full"></div>
+            <div class="flex gap-2">
+              <div class="h-6 bg-gray-200 rounded w-16"></div>
+              <div class="h-6 bg-gray-200 rounded w-12"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Paused Shows -->
+    <div v-else-if="pausedShows.length > 0" class="space-y-4">
       <div 
         v-for="show in pausedShows" 
         :key="show.id"
@@ -16,38 +35,35 @@
       >
         <div class="flex items-start gap-3">
           <img 
-            :src="show.poster" 
-            :alt="show.title"
+            :src="getImageUrl(show.media_item?.poster_path)" 
+            :alt="show.title || show.media_item?.title"
             class="w-12 h-16 object-cover rounded flex-shrink-0"
+            @error="handleImageError"
           />
           
           <div class="flex-1 min-w-0">
             <div class="flex items-start justify-between mb-2">
               <div>
-                <h3 class="font-medium text-gray-900">{{ show.title }}</h3>
+                <h3 class="font-medium text-gray-900">
+                  {{ show.title || show.media_item?.title }}
+                  <span v-if="show.season_number" class="text-purple-600 font-semibold">
+                    - Season {{ show.season_number }}
+                  </span>
+                </h3>
                 <p class="text-sm text-gray-500">
-                  Season {{ show.currentSeason }} • Episode {{ show.currentEpisode }}
+                  TV Series
+                  <span v-if="show.media_item?.releaseDate">
+                    • {{ new Date(show.media_item.releaseDate).getFullYear() }}
+                  </span>
                 </p>
               </div>
               <div class="text-xs text-gray-500">
-                {{ getDaysAgo(show.pausedDate) }} ago
+                {{ formatDate(show.updated_at) }}
               </div>
             </div>
             
-            <div class="bg-gray-100 rounded-full h-2 mb-2">
-              <div 
-                class="bg-orange-500 h-2 rounded-full" 
-                :style="{ width: `${show.progress}%` }"
-              ></div>
-            </div>
-            
-            <div class="flex items-center justify-between text-xs text-gray-600 mb-3">
-              <span>{{ show.watchedEpisodes }}/{{ show.totalEpisodes }} episodes</span>
-              <span>{{ show.progress }}% complete</span>
-            </div>
-            
-            <div v-if="show.reason" class="text-sm text-gray-600 mb-3 italic">
-              "{{ show.reason }}"
+            <div v-if="show.notes_reflections" class="text-sm text-gray-600 mb-3 italic">
+              "{{ show.notes_reflections }}"
             </div>
             
             <div class="flex items-center gap-2">
@@ -59,7 +75,7 @@
                 Continue
               </button>
               <button 
-                @click="editReason(show)"
+                @click="editShow(show)"
                 class="flex items-center gap-1 border border-gray-200 hover:bg-gray-50 px-3 py-1 rounded text-sm transition-colors"
               >
                 <Icon name="mdi:pencil" class="w-4 h-4" />
@@ -79,7 +95,7 @@
     </div>
     
     <!-- Empty State -->
-    <div v-if="pausedShows.length === 0" class="text-center py-8 text-gray-500">
+    <div v-else class="text-center py-8 text-gray-500">
       <Icon name="mdi:television-play" class="w-12 h-12 mx-auto mb-2 text-gray-300" />
       <p>No paused shows</p>
       <p class="text-sm">All caught up! 🎉</p>
@@ -88,82 +104,162 @@
 </template>
 
 <script setup lang="ts">
-interface PausedShow {
+interface MediaItem {
   id: number
+  documentId?: string
   title: string
-  poster: string
-  currentSeason: number
-  currentEpisode: number
-  totalEpisodes: number
-  watchedEpisodes: number
-  progress: number
-  pausedDate: Date
-  reason?: string
+  type: 'movies' | 'tv_series'
+  poster_path: string
+  releaseDate: string
+  trailerUrl?: string
 }
 
-const emit = defineEmits(['continue-watching', 'edit-reason', 'drop-show'])
+interface JournalEntry {
+  id: number
+  documentId?: string
+  title?: string
+  watch_status: 'watched' | 'rewatched' | 'planned_to_watch' | 'dropped' | 'paused'
+  my_rating?: number
+  watched_date?: string
+  start_date?: string
+  end_date?: string
+  season_number?: number
+  notes_reflections?: string
+  media_item: MediaItem
+  user: any
+  created_at: string
+  updated_at: string
+}
 
-// Mock paused shows data
-const pausedShows = ref<PausedShow[]>([
-  {
-    id: 1,
-    title: "House of the Dragon",
-    poster: "https://images.unsplash.com/photo-1478720568477-b emanation-5cf6?w=200&h=300&fit=crop",
-    currentSeason: 2,
-    currentEpisode: 4,
-    totalEpisodes: 20,
-    watchedEpisodes: 12,
-    progress: 60,
-    pausedDate: new Date('2024-01-10'),
-    reason: "Got too intense, needed a break"
-  },
-  {
-    id: 2,
-    title: "The Crown",
-    poster: "https://images.unsplash.com/photo-1560169897-fc0cdbdfa4d5?w=200&h=300&fit=crop",
-    currentSeason: 5,
-    currentEpisode: 2,
-    totalEpisodes: 60,
-    watchedEpisodes: 42,
-    progress: 70,
-    pausedDate: new Date('2024-01-05'),
-    reason: "Season got depressing"
-  },
-  {
-    id: 3,
-    title: "Succession",
-    poster: "https://images.unsplash.com/photo-1551836022-deb4988cc6c0?w=200&h=300&fit=crop",
-    currentSeason: 3,
-    currentEpisode: 8,
-    totalEpisodes: 39,
-    watchedEpisodes: 27,
-    progress: 69,
-    pausedDate: new Date('2023-12-28'),
-    reason: "Lost interest in the characters"
-  }
-])
+const emit = defineEmits(['resume-show', 'status-updated', 'edit-show'])
 
-const getDaysAgo = (date: Date) => {
-  const now = new Date()
-  const diffTime = Math.abs(now.getTime() - date.getTime())
-  const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24))
+const config = useRuntimeConfig()
+const { user } = useAuth()
+
+// State
+const pausedShows = ref<JournalEntry[]>([])
+const loading = ref(false)
+
+// Helper function for API calls
+const strapiCall = async (endpoint: string, options: any = {}) => {
+  const strapiUrl = config.public.strapiUrl || 'http://localhost:1337'
+  const token = useState<string | null>('auth.token')
   
-  if (diffDays === 0) return 'Today'
-  if (diffDays === 1) return '1 day'
-  if (diffDays < 7) return `${diffDays} days`
-  if (diffDays < 30) return `${Math.floor(diffDays / 7)} weeks`
-  return `${Math.floor(diffDays / 30)} months`
+  return await $fetch(`${strapiUrl}/api${endpoint}`, {
+    headers: {
+      'Content-Type': 'application/json',
+      ...(token.value && { Authorization: `Bearer ${token.value}` }),
+      ...options.headers
+    },
+    ...options
+  })
 }
 
-const continueWatching = (show: PausedShow) => {
-  emit('continue-watching', show)
+// Fetch paused TV series entries
+const fetchPausedShows = async () => {
+  if (!user.value) return
+  
+  loading.value = true
+  try {
+    const response = await strapiCall('/journal-entries', {
+      method: 'GET',
+      query: {
+        'populate[media_item]': true,
+        'populate[user]': true,
+        'filters[watch_status]': 'paused',
+        'filters[media_item][type]': 'tv_series', // Only TV series, not movies
+        // Temporarily commented out user filter until existing entries have user relationships
+        // 'filters[user][id]': user.value.id,
+        sort: 'updatedAt:desc',
+        'pagination[limit]': 10 // Get up to 10 paused TV series entries
+      }
+    }) as { data: JournalEntry[] }
+    
+    pausedShows.value = response.data || []
+  } catch (error) {
+    console.error('Error fetching paused TV series entries:', error)
+    pausedShows.value = []
+  } finally {
+    loading.value = false
+  }
 }
 
-const editReason = (show: PausedShow) => {
-  emit('edit-reason', show)
+// Helper functions
+const getImageUrl = (posterPath: string | null) => {
+  if (!posterPath) {
+    const strapiUrl = config.public.strapiUrl || 'http://localhost:1337'
+    return `${strapiUrl}/uploads/default_image_312eed5d3f.png`
+  }
+  if (posterPath.startsWith('http')) return posterPath
+  return `https://image.tmdb.org/t/p/w200${posterPath}`
 }
 
-const dropShow = (show: PausedShow) => {
-  emit('drop-show', show)
+const handleImageError = (event: Event) => {
+  const target = event.target as HTMLImageElement
+  const strapiUrl = config.public.strapiUrl || 'http://localhost:1337'
+  target.src = `${strapiUrl}/uploads/default_image_312eed5d3f.png`
 }
+
+const formatDate = (dateString: string) => {
+  if (!dateString) return ''
+  return new Intl.DateTimeFormat('en-US', { 
+    month: 'short', 
+    day: 'numeric'
+  }).format(new Date(dateString))
+}
+
+const continueWatching = (show: JournalEntry) => {
+  emit('resume-show', show)
+  // Navigate to journal page with the entry selected
+  navigateTo(`/journal?entry=${show.id}`)
+}
+
+const editShow = (show: JournalEntry) => {
+  emit('edit-show', show)
+  // Navigate to journal page with the entry selected for editing
+  navigateTo(`/journal?entry=${show.id}`)
+}
+
+const dropShow = async (show: JournalEntry) => {
+  if (!confirm(`Are you sure you want to drop "${show.title || show.media_item?.title}"?`)) {
+    return
+  }
+  
+  try {
+    await strapiCall(`/journal-entries/${show.documentId}`, {
+      method: 'PUT',
+      body: {
+        data: {
+          watch_status: 'dropped'
+        }
+      }
+    })
+    
+    // Remove from local state
+    pausedShows.value = pausedShows.value.filter(s => s.id !== show.id)
+    emit('status-updated', { ...show, watch_status: 'dropped' })
+  } catch (error) {
+    console.error('Error dropping show:', error)
+    alert('Failed to drop show. Please try again.')
+  }
+}
+
+// Lifecycle
+onMounted(() => {
+  fetchPausedShows()
+})
+
+// Watch for user changes
+watch(() => user.value, (newUser) => {
+  if (newUser) {
+    fetchPausedShows()
+  } else {
+    pausedShows.value = []
+  }
+})
+
+// Expose refetch method for parent components
+defineExpose({
+  refetch: fetchPausedShows
+})
 </script>

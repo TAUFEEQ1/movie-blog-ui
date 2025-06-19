@@ -101,14 +101,17 @@
           <!-- Sidebar Widgets -->
           <div class="space-y-6">
             <!-- Continue Watching -->
-            <ContinueWatchingWidget @resume-watching="resumeWatching" />
+            <ContinueWatchingWidget 
+              ref="continueWatchingWidget"
+              @resume-watching="resumeWatching" 
+            />
             
             <!-- Paused Shows -->
             <PausedShowsWidget 
+              ref="pausedShowsWidget"
               @resume-show="resumeShow"
               @status-updated="handleShowStatusUpdate"
               @edit-show="editShow"
-              @resume-all="resumeAllShows"
             />
             
             <!-- Recent Activity -->
@@ -323,9 +326,9 @@ const handleToggleFavorite = (movieId: number, isFavorite: boolean) => {
   // Implement favorite toggle logic
 }
 
-const resumeWatching = (item: any) => {
-  console.log('Resuming:', item.title)
-  openVideoModal(item.watchUrl)
+const resumeWatching = (entry: any) => {
+  // Navigate to journal page with the entry selected for editing
+  navigateTo(`/journal?entry=${entry.id}`)
 }
 
 // View All Functions
@@ -351,6 +354,8 @@ const viewAllRecommended = () => {
 
 // Journal Integration Methods
 const journalWidget = ref<{ refetch?: () => void } | null>(null)
+const continueWatchingWidget = ref<{ refetch?: () => void } | null>(null)
+const pausedShowsWidget = ref<{ refetch?: () => void } | null>(null)
 
 const openJournalModal = (movie: any) => {
   console.log('Adding to journal:', movie.title)
@@ -360,9 +365,15 @@ const openJournalModal = (movie: any) => {
 
 const handleJournalUpdate = (entry: any) => {
   console.log('Journal entry updated:', entry)
-  // Refresh the journal widget to show latest entries
+  // Refresh all widgets to show latest data
   if (journalWidget.value?.refetch) {
     journalWidget.value.refetch()
+  }
+  if (continueWatchingWidget.value?.refetch) {
+    continueWatchingWidget.value.refetch()
+  }
+  if (pausedShowsWidget.value?.refetch) {
+    pausedShowsWidget.value.refetch()
   }
 }
 
@@ -373,22 +384,23 @@ const handleStatusChange = (status: string) => {
 
 // Paused Shows Methods
 const resumeShow = (show: any) => {
-  console.log('Resuming show:', show.title)
-  openVideoModal(show.trailerUrl || `https://www.youtube.com/watch?v=dQw4w9WgXcQ`)
+  // Navigate to journal page with the entry selected for editing
+  navigateTo(`/journal?entry=${show.id}`)
 }
 
 const handleShowStatusUpdate = (data: any) => {
-  console.log('Show status updated:', data.show.title, 'to', data.status)
-  // Update local state or refresh data
+  console.log('Show status updated:', data)
+  // Refresh all relevant widgets when a show status changes
+  if (pausedShowsWidget.value?.refetch) {
+    pausedShowsWidget.value.refetch()
+  }
+  if (journalWidget.value?.refetch) {
+    journalWidget.value.refetch()
+  }
 }
 
 const editShow = (show: any) => {
-  console.log('Editing show:', show.title)
-  // Open edit modal or navigate to edit page
-}
-
-const resumeAllShows = (shows: any[]) => {
-  console.log('Resuming all shows:', shows.length)
-  // Implement bulk resume functionality
+  // Navigate to journal page with the entry selected for editing
+  navigateTo(`/journal?entry=${show.id}`)
 }
 </script>
