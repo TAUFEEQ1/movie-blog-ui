@@ -175,6 +175,26 @@
             />
           </div>
 
+          <!-- Episode Number (for TV series) -->
+          <div v-if="selectedMedia?.type === 'tv_series'">
+            <label class="block text-sm font-medium text-gray-700 mb-2">
+              Episode Number
+              <span v-if="form.watch_status === 'paused'" class="text-red-500">*</span>
+            </label>
+            <input
+              v-model.number="form.episode"
+              type="number"
+              min="1"
+              placeholder="1"
+              :required="form.watch_status === 'paused'"
+              class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              :class="{ 'border-red-500': form.watch_status === 'paused' && !form.episode }"
+            />
+            <p v-if="form.watch_status === 'paused' && !form.episode" class="text-red-500 text-sm mt-1">
+              Episode number is required for paused TV series
+            </p>
+          </div>
+
           <!-- Rating -->
           <div v-if="form.watch_status === 'watched' || form.watch_status === 'rewatched'">
             <label class="block text-sm font-medium text-gray-700 mb-2">
@@ -306,6 +326,7 @@ const form = ref({
   start_date: '',
   end_date: '',
   season_number: undefined as number | undefined,
+  episode: undefined as number | undefined,
   notes_reflections: ''
 })
 
@@ -357,6 +378,7 @@ const resetForm = () => {
     start_date: '',
     end_date: '',
     season_number: undefined,
+    episode: undefined,
     notes_reflections: ''
   }
   selectedMedia.value = null
@@ -455,6 +477,14 @@ const handleSearchBlur = () => {
 const handleSubmit = async () => {
   if (!selectedMedia.value) return
 
+  // Validate episode field for paused TV series
+  if (selectedMedia.value.type === 'tv_series' && 
+      form.value.watch_status === 'paused' && 
+      !form.value.episode) {
+    alert('Episode number is required for paused TV series')
+    return
+  }
+
   try {
     // Build entry data, filtering out empty values
     const entryData: any = {
@@ -496,6 +526,11 @@ const handleSubmit = async () => {
     // Only include season number if it's provided and for TV series
     if (selectedMedia.value.type === 'tv_series' && form.value.season_number) {
       entryData.season_number = form.value.season_number
+    }
+
+    // Only include episode number if it's provided and for TV series
+    if (selectedMedia.value.type === 'tv_series' && form.value.episode) {
+      entryData.episode = form.value.episode
     }
     
     const response: any = await strapiCall('/journal-entries/tmdb/create', {

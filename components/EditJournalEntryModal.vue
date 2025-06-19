@@ -83,6 +83,26 @@
             />
           </div>
 
+          <!-- Episode Number (for TV series) -->
+          <div v-if="entry?.media_item?.type === 'tv_series'">
+            <label class="block text-sm font-medium text-gray-700 mb-2">
+              Episode Number
+              <span v-if="form.watch_status === 'paused'" class="text-red-500">*</span>
+            </label>
+            <input
+              v-model.number="form.episode"
+              type="number"
+              min="1"
+              placeholder="1"
+              :required="form.watch_status === 'paused'"
+              class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              :class="{ 'border-red-500': form.watch_status === 'paused' && !form.episode }"
+            />
+            <p v-if="form.watch_status === 'paused' && !form.episode" class="text-red-500 text-sm mt-1">
+              Episode number is required for paused TV series
+            </p>
+          </div>
+
           <!-- Rating -->
           <div v-if="form.watch_status === 'watched' || form.watch_status === 'rewatched'">
             <label class="block text-sm font-medium text-gray-700 mb-2">
@@ -210,6 +230,7 @@ interface JournalEntry {
   start_date?: string
   end_date?: string
   season_number?: number
+  episode?: number
   notes_reflections?: string
   media_item: MediaItem
   user: any
@@ -232,6 +253,7 @@ const form = ref({
   start_date: '',
   end_date: '',
   season_number: undefined as number | undefined,
+  episode: undefined as number | undefined,
   notes_reflections: ''
 })
 
@@ -263,6 +285,7 @@ watch(() => props.entry, (entry) => {
       start_date: entry.start_date || '',
       end_date: entry.end_date || '',
       season_number: entry.season_number,
+      episode: entry.episode,
       notes_reflections: entry.notes_reflections || ''
     }
   }
@@ -277,6 +300,14 @@ const getImageUrl = (posterPath: string | null) => {
 
 const handleSubmit = async () => {
   if (!props.entry) return
+
+  // Validate episode field for paused TV series
+  if (props.entry.media_item?.type === 'tv_series' && 
+      form.value.watch_status === 'paused' && 
+      !form.value.episode) {
+    alert('Episode number is required for paused TV series')
+    return
+  }
 
   try {
     // Only send form data, no media changes - filter out empty values
@@ -309,6 +340,10 @@ const handleSubmit = async () => {
     
     if (form.value.season_number && form.value.season_number > 0) {
       updateData.season_number = form.value.season_number
+    }
+    
+    if (form.value.episode && form.value.episode > 0) {
+      updateData.episode = form.value.episode
     }
     
     if (form.value.notes_reflections?.trim()) {

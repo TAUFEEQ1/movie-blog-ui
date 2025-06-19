@@ -124,6 +124,7 @@ interface JournalEntry {
   start_date?: string
   end_date?: string
   season_number?: number
+  episode?: number
   notes_reflections?: string
   media_item: MediaItem
   user: any
