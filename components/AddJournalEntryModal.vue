@@ -456,8 +456,11 @@ const handleSubmit = async () => {
   if (!selectedMedia.value) return
 
   try {
-    const entryData = {
-      ...form.value,
+    // Build entry data, filtering out empty values
+    const entryData: any = {
+      title: form.value.title || undefined,
+      watch_status: form.value.watch_status,
+      notes_reflections: form.value.notes_reflections || undefined,
       tmdb: {
         id: selectedMedia.value.tmdbId,
         type: selectedMedia.value.tmdbType,
@@ -468,6 +471,31 @@ const handleSubmit = async () => {
         vote_average: selectedMedia.value.rating,
         ...selectedMedia.value.tmdbData
       }
+    }
+
+    // Only include rating for watched/rewatched entries
+    if (form.value.watch_status === 'watched' || form.value.watch_status === 'rewatched') {
+      if (form.value.my_rating) {
+        entryData.my_rating = form.value.my_rating
+      }
+    }
+
+    // Only include dates if they have values (not empty strings)
+    if (form.value.watched_date && form.value.watched_date.trim()) {
+      entryData.watched_date = form.value.watched_date
+    }
+
+    if (form.value.start_date && form.value.start_date.trim()) {
+      entryData.start_date = form.value.start_date
+    }
+
+    if (form.value.end_date && form.value.end_date.trim()) {
+      entryData.end_date = form.value.end_date
+    }
+
+    // Only include season number if it's provided and for TV series
+    if (selectedMedia.value.type === 'tv_series' && form.value.season_number) {
+      entryData.season_number = form.value.season_number
     }
     
     const response: any = await strapiCall('/journal-entries/tmdb/create', {
