@@ -41,7 +41,7 @@
 
     <!-- Movie Info -->
     <div class="p-4">
-      <h3 class="font-bold text-lg text-gray-900 mb-1 group-hover:text-blue-600 transition-colors">
+      <h3 class="font-bold text-lg text-gray-900 mb-1 group-hover:text-blue-600 transition-colors line-clamp-2 leading-tight">
         {{ movie.title }}
       </h3>
       <div class="flex items-center gap-2 mb-2">

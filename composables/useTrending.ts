@@ -148,7 +148,7 @@ export const useTrending = () => {
     
     return {
       id: item.tmdb_id,
-      title: item.title,
+      title: truncateTitle(item.title, 60), // Truncate long titles for better UI display
       poster: item.poster_path ? `${tmdbImageBaseUrl}${item.poster_path}` : '',
       rating: item.tmdb_rating ? Number((item.tmdb_rating / 2).toFixed(1)) : 0, // Convert to 5-star rating
       genres: item.genres || [],
@@ -159,6 +159,24 @@ export const useTrending = () => {
       type: item.type,
       tmdb_id: item.tmdb_id
     }
+  }
+
+  // Utility function to truncate long titles
+  const truncateTitle = (title: string, maxLength: number = 60): string => {
+    if (!title) return ''
+    
+    // Simple truncation if title is too long
+    if (title.length > maxLength) {
+      const truncated = title.substring(0, maxLength)
+      const lastSpace = truncated.lastIndexOf(' ')
+      if (lastSpace > maxLength * 0.7) {
+        return truncated.substring(0, lastSpace) + '...'
+      } else {
+        return truncated + '...'
+      }
+    }
+    
+    return title
   }
 
   // Get trending movies formatted for UI
@@ -186,6 +204,7 @@ export const useTrending = () => {
     getTrendingMovies,
     getTrendingTVShows,
     getTrendingByPlatformForUI,
-    transformTrendingToMovie
+    transformTrendingToMovie,
+    truncateTitle
   }
 }
