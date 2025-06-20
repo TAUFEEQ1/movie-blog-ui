@@ -157,7 +157,8 @@
 </template>
 
 <script setup lang="ts">
-import { useTrendingRatings } from '~/composables/useTrendingRatings'
+import { useUserRatings } from '~/composables/useUserRatings'
+import type { UserRating } from '~/composables/useUserRatings'
 
 interface TrendingItem {
   id: number
@@ -171,32 +172,19 @@ interface TrendingItem {
   [key: string]: any
 }
 
-interface TrendingRating {
-  id: number
-  user: number
-  tmdb_id: number
-  type: 'movie' | 'tv'
-  rating: number
-  comment?: string
-  is_notable: boolean
-  is_unfavorable: boolean
-  createdAt: string
-  updatedAt: string
-}
-
 const props = defineProps<{
   isOpen: boolean
   item: TrendingItem | null
-  existingRating?: TrendingRating | null
+  existingRating?: UserRating | null
 }>()
 
 const emit = defineEmits<{
   close: []
-  rated: [rating: TrendingRating]
+  rated: [rating: UserRating]
 }>()
 
 // Composables
-const { rateItem } = useTrendingRatings()
+const { rateItem } = useUserRatings()
 
 // Reactive state
 const rating = ref(0)
@@ -239,7 +227,8 @@ const submitRating = async () => {
 
     const result = await rateItem({
       tmdb_id: props.item.tmdb_id,
-      type: props.item.type,
+      content_type: 'trending',
+      media_type: props.item.type,
       rating: rating.value,
       comment: comment.value.trim() || undefined,
       is_notable: isNotable.value,
@@ -266,7 +255,8 @@ const deleteRating = async () => {
     
     const result = await rateItem({
       tmdb_id: props.item!.tmdb_id,
-      type: props.item!.type,
+      content_type: 'trending',
+      media_type: props.item!.type,
       rating: 1, // Minimum rating since we don't have delete endpoint
       comment: '',
       is_notable: false,

@@ -8,7 +8,10 @@
     ></div>
 
     <div class="flex gap-0 lg:gap-6 p-3 lg:p-6">
-      <!-- Mobile Menu Toggle -->
+      <!-- Mob// Loading states
+const loading = ref(false)
+const hasMore = ref(true)
+const currentPage = ref(1) Toggle -->
       <button
         @click="showMobileMenu = !showMobileMenu"
         class="fixed top-4 left-4 z-50 lg:hidden p-2 bg-white rounded-lg shadow-md"
@@ -29,28 +32,80 @@
         <!-- Top Navigation -->
         <TopBar @search="handleSearch" />
 
-        <!-- Hero Section with Trending Movie -->
-        <div class="relative bg-gradient-to-r from-blue-900 to-purple-900 rounded-3xl overflow-hidden mb-8 h-96">
+        <!-- Hero Section with Auto-Rotating Trending Movies -->
+        <div class="relative bg-gradient-to-r from-blue-900 to-purple-900 rounded-3xl overflow-hidden mb-8 h-96 transition-all duration-500">
+          <!-- Background Video/Image -->
           <div 
             v-if="currentHeroItem"
-            class="absolute inset-0 bg-cover bg-center"
-            :style="`background-image: url('https://image.tmdb.org/t/p/w1280${currentHeroItem.backdrop_path}')`"
+            class="absolute inset-0 transition-opacity duration-1000"
+            :class="{ 'opacity-100': currentHeroItem, 'opacity-0': !currentHeroItem }"
           >
-            <div class="absolute inset-0 bg-black bg-opacity-50"></div>
+            <!-- YouTube Video Background -->
+            <iframe 
+              v-if="currentHeroItem.trailer_url && showVideo && isYouTubeUrl(currentHeroItem.trailer_url)"
+              :key="`youtube-${currentHeroItem.tmdb_id}`"
+              class="absolute inset-0 w-full h-full object-cover pointer-events-none transition-opacity duration-1000"
+              :src="`https://www.youtube.com/embed/${getYouTubeVideoId(currentHeroItem.trailer_url)}?autoplay=1&mute=1&loop=1&controls=0&showinfo=0&rel=0&modestbranding=1&playsinline=1&playlist=${getYouTubeVideoId(currentHeroItem.trailer_url)}`"
+              frameborder="0"
+              allow="autoplay; fullscreen"
+              allowfullscreen
+              @load="onVideoLoaded"
+              @error="onVideoError"
+            ></iframe>
+            
+            <!-- Direct Video Background (for non-YouTube videos) -->
+            <video 
+              v-else-if="currentHeroItem.trailer_url && showVideo && getVideoSource(currentHeroItem.trailer_url)"
+              ref="heroVideoRef"
+              :key="`video-${currentHeroItem.tmdb_id}`"
+              class="absolute inset-0 w-full h-full object-cover transition-opacity duration-1000"
+              :src="getVideoSource(currentHeroItem.trailer_url) || ''"
+              autoplay
+              muted
+              loop
+              playsinline
+              @loadeddata="onVideoLoaded"
+              @error="onVideoError"
+            ></video>
+            
+            <!-- Fallback Image Background -->
+            <div 
+              v-if="!currentHeroItem.trailer_url || !showVideo"
+              class="absolute inset-0 bg-cover bg-center transition-all duration-1000"
+              :style="`background-image: url('https://image.tmdb.org/t/p/w1280${currentHeroItem.backdrop_path}')`"
+            ></div>
+            
+            <!-- Overlay -->
+            <div class="absolute inset-0 bg-gradient-to-r from-black/60 via-black/30 to-black/60 transition-opacity duration-1000"></div>
           </div>
 
+          <!-- Loading State -->
+          <div 
+            v-if="!currentHeroItem" 
+            class="absolute inset-0 bg-gradient-to-r from-blue-900 to-purple-900 flex items-center justify-center"
+          >
+            <div class="text-white text-center">
+              <Icon name="mdi:loading" class="w-8 h-8 animate-spin mx-auto mb-2" />
+              <p>Loading trending content...</p>
+            </div>
+          </div>
+
+          <!-- Content -->
           <div class="relative z-10 flex items-center h-full p-8">
             <div class="flex-1">
               <div class="flex items-center gap-2 mb-2">
                 <Icon name="mdi:fire" class="w-5 h-5 text-orange-400" />
                 <span class="text-orange-400 font-medium">Trending Now</span>
+                <span class="text-white opacity-60 text-sm ml-2">
+                  {{ heroIndex + 1 }} / {{ heroItems.length }}
+                </span>
               </div>
 
-              <h1 v-if="currentHeroItem" class="text-4xl md:text-6xl font-bold text-white mb-4">
+              <h1 v-if="currentHeroItem" class="text-4xl md:text-6xl font-bold text-white mb-4 transition-all duration-500">
                 {{ currentHeroItem.title }}
               </h1>
 
-              <p v-if="currentHeroItem" class="text-lg text-white mb-6 max-w-xl opacity-90">
+              <p v-if="currentHeroItem" class="text-lg text-white mb-6 max-w-xl opacity-90 transition-all duration-500">
                 {{ currentHeroItem.overview }}
               </p>
 
@@ -91,6 +146,55 @@
                 </button>
               </div>
             </div>
+          </div>
+
+          <!-- Hero Navigation Dots -->
+          <div class="absolute bottom-4 right-4 z-20 flex items-center gap-2">
+            <button
+              v-for="(item, index) in heroItems"
+              :key="`hero-dot-${item.tmdb_id}`"
+              @click="goToHeroItem(index)"
+              :class="[
+                'w-3 h-3 rounded-full transition-all duration-300 relative overflow-hidden',
+                index === heroIndex 
+                  ? 'bg-white scale-125' 
+                  : 'bg-white bg-opacity-50 hover:bg-opacity-75'
+              ]"
+            >
+              <!-- Progress indicator for current item -->
+              <div 
+                v-if="index === heroIndex && isAutoRotating"
+                class="absolute inset-0 bg-orange-400 rounded-full origin-center animate-pulse"
+                :style="{ 
+                  animation: 'progress-fill 8s linear infinite'
+                }"
+              ></div>
+            </button>
+          </div>
+
+          <!-- Auto-rotation Controls -->
+          <div class="absolute top-4 right-4 z-20 flex items-center gap-2">
+            <!-- Video/Image indicator -->
+            <div 
+              v-if="currentHeroItem?.trailer_url"
+              class="flex items-center gap-1 px-2 py-1 bg-black bg-opacity-30 rounded-lg backdrop-blur-sm text-white text-xs"
+            >
+              <Icon :name="showVideo && (isYouTubeUrl(currentHeroItem.trailer_url) || getVideoSource(currentHeroItem.trailer_url)) ? 'mdi:play-circle' : 'mdi:image'" class="w-3 h-3" />
+              <span>{{ showVideo && (isYouTubeUrl(currentHeroItem.trailer_url) || getVideoSource(currentHeroItem.trailer_url)) ? 'Video' : 'Image' }}</span>
+            </div>
+            
+            <button
+              @click="toggleAutoRotation"
+              :class="[
+                'p-2 rounded-lg backdrop-blur-sm transition-colors',
+                isAutoRotating 
+                  ? 'bg-white bg-opacity-20 text-white' 
+                  : 'bg-white bg-opacity-30 text-white hover:bg-opacity-40'
+              ]"
+              :title="isAutoRotating ? 'Pause auto-rotation' : 'Resume auto-rotation'"
+            >
+              <Icon :name="isAutoRotating ? 'mdi:pause' : 'mdi:play'" class="w-5 h-5" />
+            </button>
           </div>
         </div>
 
@@ -223,6 +327,14 @@ const userRatings = ref(new Map<string, UserRating>())
 const currentHeroItem = ref<TrendingItem | null>(null)
 const currentHeroRating = ref<UserRating | null>(null)
 
+// Hero carousel state
+const heroIndex = ref(0)
+const heroItems = ref<TrendingItem[]>([])
+const isAutoRotating = ref(true)
+const showVideo = ref(true)
+const heroVideoRef = ref<HTMLVideoElement | null>(null)
+let heroRotationInterval: NodeJS.Timeout | null = null
+
 // Filters and sorting
 const selectedType = ref('')
 const sortOrder = ref('rating_desc')
@@ -240,13 +352,94 @@ const loading = ref(false)
 const hasMore = ref(true)
 const currentPage = ref(1)
 
-// Hero carousel
-const heroIndex = ref(0)
-const heroItems = ref<TrendingItem[]>([])
-
 // Methods
 const handleSearch = (query: string) => {
   console.log('Searching for:', query)
+}
+
+// Hero carousel
+const rotateHero = () => {
+  if (heroItems.value.length > 1 && isAutoRotating.value) {
+    heroIndex.value = (heroIndex.value + 1) % heroItems.value.length
+    currentHeroItem.value = heroItems.value[heroIndex.value]
+    showVideo.value = false // Reset video state
+    nextTick(() => {
+      showVideo.value = true // Trigger video load
+    })
+    loadHeroRating()
+  }
+}
+
+const goToHeroItem = (index: number) => {
+  if (index >= 0 && index < heroItems.value.length) {
+    heroIndex.value = index
+    currentHeroItem.value = heroItems.value[index]
+    showVideo.value = false
+    nextTick(() => {
+      showVideo.value = true
+    })
+    loadHeroRating()
+  }
+}
+
+const toggleAutoRotation = () => {
+  isAutoRotating.value = !isAutoRotating.value
+  if (isAutoRotating.value) {
+    startHeroRotation()
+  } else {
+    stopHeroRotation()
+  }
+}
+
+const startHeroRotation = () => {
+  if (heroRotationInterval) {
+    clearInterval(heroRotationInterval)
+  }
+  heroRotationInterval = setInterval(rotateHero, 8000) // Change every 8 seconds
+}
+
+const stopHeroRotation = () => {
+  if (heroRotationInterval) {
+    clearInterval(heroRotationInterval)
+    heroRotationInterval = null
+  }
+}
+
+const onVideoLoaded = () => {
+  // Video loaded successfully
+  if (heroVideoRef.value) {
+    heroVideoRef.value.play().catch(() => {
+      // Fallback to image if autoplay fails
+      showVideo.value = false
+    })
+  }
+}
+
+const onVideoError = () => {
+  // Video failed to load, fallback to image
+  showVideo.value = false
+}
+
+// Utility function to extract YouTube video ID
+const getYouTubeVideoId = (url: string): string | null => {
+  if (!url) return null
+  
+  const regExp = /^.*((youtu.be\/)|(v\/)|(\/u\/\w\/)|(embed\/)|(watch\?))\??v?=?([^#&?]*).*/
+  const match = url.match(regExp)
+  return (match && match[7].length === 11) ? match[7] : null
+}
+
+// Check if URL is a YouTube video
+const isYouTubeUrl = (url: string): boolean => {
+  return url.includes('youtube.com') || url.includes('youtu.be')
+}
+
+// Get video source URL (for non-YouTube videos)
+const getVideoSource = (url: string): string | null => {
+  if (isYouTubeUrl(url)) {
+    return null // YouTube videos can't be played directly
+  }
+  return url
 }
 
 const fetchTrendingItems = async (reset = true) => {
@@ -432,20 +625,43 @@ const closeVideoModal = () => {
   currentVideoUrl.value = ''
 }
 
-// Hero carousel
-const rotateHero = () => {
-  if (heroItems.value.length > 1) {
-    heroIndex.value = (heroIndex.value + 1) % heroItems.value.length
-    currentHeroItem.value = heroItems.value[heroIndex.value]
-    loadHeroRating()
-  }
-}
-
 // Initialize
 onMounted(async () => {
   await fetchTrendingItems()
   
   // Start hero rotation
-  setInterval(rotateHero, 8000) // Change every 8 seconds
+  startHeroRotation()
+})
+
+// Cleanup on unmount
+onUnmounted(() => {
+  stopHeroRotation()
 })
 </script>
+
+<style scoped>
+@keyframes progress-fill {
+  0% {
+    transform: scale(0);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+/* Smooth transitions for hero content */
+.hero-content-enter-active,
+.hero-content-leave-active {
+  transition: all 0.5s ease-in-out;
+}
+
+.hero-content-enter-from {
+  opacity: 0;
+  transform: translateY(20px);
+}
+
+.hero-content-leave-to {
+  opacity: 0;
+  transform: translateY(-20px);
+}
+</style>
