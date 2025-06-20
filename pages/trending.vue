@@ -180,9 +180,10 @@
     </div>
 
     <!-- Rating Modal -->
-    <RatingModal 
-      :is-open="isRatingModalOpen"
+    <UniversalRatingModal 
+      v-if="isRatingModalOpen && selectedItem"
       :item="selectedItem"
+      :content-type="'trending'"
       :existing-rating="selectedItemRating"
       @close="closeRatingModal"
       @rated="handleItemRated"
@@ -212,15 +213,15 @@ definePageMeta({
 // Composables
 const { user } = useAuth()
 const { getAllTrending, getActiveTrending } = useTrending()
-const { getMyRating, getMyRatings, rateItem } = useTrendingRatings()
+const { getMyRating, getMyRatings, rateItem } = useUserRatings()
 
 // Reactive state
 const showMobileMenu = ref(false)
 const trendingItems = ref<TrendingItem[]>([])
 const displayedItems = ref<TrendingItem[]>([])
-const userRatings = ref(new Map<string, TrendingRating>())
+const userRatings = ref(new Map<string, UserRating>())
 const currentHeroItem = ref<TrendingItem | null>(null)
-const currentHeroRating = ref<TrendingRating | null>(null)
+const currentHeroRating = ref<UserRating | null>(null)
 
 // Filters and sorting
 const selectedType = ref('')
@@ -230,7 +231,7 @@ const ratingFilter = ref('all')
 // Modals
 const isRatingModalOpen = ref(false)
 const selectedItem = ref<TrendingItem | null>(null)
-const selectedItemRating = ref<TrendingRating | null>(null)
+const selectedItemRating = ref<UserRating | null>(null)
 const isVideoModalOpen = ref(false)
 const currentVideoUrl = ref('')
 
@@ -295,11 +296,11 @@ const fetchTrendingItems = async (reset = true) => {
 
 const loadUserRatings = async () => {
   try {
-    const ratings = await getMyRatings()
+    const ratings = await getMyRatings({ content_type: 'trending' })
     userRatings.value.clear()
     
     ratings.forEach(rating => {
-      const key = `${rating.tmdb_id}-${rating.type}`
+      const key = `${rating.tmdb_id}-${rating.media_type}`
       userRatings.value.set(key, rating)
     })
   } catch (error) {
@@ -311,6 +312,7 @@ const loadHeroRating = async () => {
   if (currentHeroItem.value) {
     currentHeroRating.value = await getMyRating(
       currentHeroItem.value.tmdb_id, 
+      'trending',
       currentHeroItem.value.type
     )
   }
@@ -390,15 +392,30 @@ const closeRatingModal = () => {
   selectedItemRating.value = null
 }
 
-const handleItemRated = async (rating: TrendingRating) => {
-  const key = `${rating.tmdb_id}-${rating.type}`
-  userRatings.value.set(key, rating)
-  
-  // Update hero rating if it's the current hero item
-  if (currentHeroItem.value && 
-      currentHeroItem.value.tmdb_id === rating.tmdb_id && 
-      currentHeroItem.value.type === rating.type) {
-    currentHeroRating.value = rating
+const handleItemRated = async (rating: UserRating | null) => {
+  if (rating) {
+    const key = `${rating.tmdb_id}-${rating.media_type}`
+    userRatings.value.set(key, rating)
+    
+    // Update hero rating if it's the current hero item
+    if (currentHeroItem.value && 
+        currentHeroItem.value.tmdb_id === rating.tmdb_id && 
+        currentHeroItem.value.type === rating.media_type) {
+      currentHeroRating.value = rating
+    }
+  } else {
+    // Handle rating removal
+    if (selectedItem.value) {
+      const key = `${selectedItem.value.tmdb_id}-${selectedItem.value.type}`
+      userRatings.value.delete(key)
+      
+      // Clear hero rating if it's the current hero item
+      if (currentHeroItem.value && 
+          currentHeroItem.value.tmdb_id === selectedItem.value.tmdb_id && 
+          currentHeroItem.value.type === selectedItem.value.type) {
+        currentHeroRating.value = null
+      }
+    }
   }
   
   applyRatingFilter()

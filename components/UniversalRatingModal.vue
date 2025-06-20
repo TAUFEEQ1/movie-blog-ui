@@ -154,6 +154,8 @@
 </template>
 
 <script setup lang="ts">
+import type { UserRating } from '~/composables/useUserRatings'
+
 interface Props {
   item: {
     id: number
@@ -162,11 +164,14 @@ interface Props {
     type: 'movie' | 'tv'
   }
   contentType: 'trending' | 'coming_soon'
-  existingRating?: any
+  existingRating?: UserRating | null
 }
 
 const props = defineProps<Props>()
-const emit = defineEmits(['close', 'rated'])
+const emit = defineEmits<{
+  close: []
+  rated: [rating: UserRating | null]
+}>()
 
 // Composables
 const { rateItem, removeRating, getMyRating } = useUserRatings()
@@ -182,11 +187,11 @@ const localMoodRating = ref(props.existingRating?.mood_rating || null)
 
 // Mood options for coming soon items
 const moodOptions = [
-  { value: 'excited', label: 'Excited', emoji: '🤩' },
-  { value: 'interested', label: 'Interested', emoji: '😊' },
-  { value: 'neutral', label: 'Neutral', emoji: '😐' },
-  { value: 'disappointed', label: 'Disappointed', emoji: '😞' },
-  { value: 'avoid', label: 'Avoid', emoji: '🚫' }
+  { value: 'excited' as const, label: 'Excited', emoji: '🤩' },
+  { value: 'interested' as const, label: 'Interested', emoji: '😊' },
+  { value: 'neutral' as const, label: 'Neutral', emoji: '😐' },
+  { value: 'disappointed' as const, label: 'Disappointed', emoji: '😞' },
+  { value: 'avoid' as const, label: 'Avoid', emoji: '🚫' }
 ]
 
 // Toggle functions
@@ -227,8 +232,19 @@ const handleSubmit = async () => {
       mood_rating: localMoodRating.value || undefined
     }
 
-    await rateItem(ratingData)
-    emit('rated', ratingData)
+    const result = await rateItem(ratingData)
+    
+    // Get the updated rating from the API to emit the full UserRating object
+    const updatedRating = await getMyRating(
+      props.item.tmdb_id,
+      props.contentType,
+      props.item.type
+    )
+    
+    if (updatedRating) {
+      emit('rated', updatedRating)
+    }
+    
     emit('close')
   } catch (error) {
     console.error('Error submitting rating:', error)

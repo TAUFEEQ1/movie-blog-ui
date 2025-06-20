@@ -129,22 +129,11 @@ interface TrendingItem {
   updatedAt: string
 }
 
-interface TrendingRating {
-  id: number
-  user: number
-  tmdb_id: number
-  type: 'movie' | 'tv'
-  rating: number
-  comment?: string
-  is_notable: boolean
-  is_unfavorable: boolean
-  createdAt: string
-  updatedAt: string
-}
+import type { UserRating } from '~/composables/useUserRatings'
 
 const props = defineProps<{
   item: TrendingItem
-  userRating?: TrendingRating | null
+  userRating?: UserRating | null
 }>()
 
 defineEmits<{

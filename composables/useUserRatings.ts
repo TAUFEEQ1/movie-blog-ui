@@ -49,6 +49,9 @@ export const useUserRatings = () => {
   const config = useRuntimeConfig()
   const { user, token } = useAuth()
   
+  // Mock user ratings for testing
+  const mockUserRatings: UserRating[] = []
+  
   // Direct API calls to Strapi
   const apiCall = async (endpoint: string, options: any = {}) => {
     const strapiUrl = config.public.strapiUrl || 'http://localhost:1337'
@@ -100,8 +103,14 @@ export const useUserRatings = () => {
       const response = await apiCall(`/user-ratings/my-rating/${tmdb_id}/${content_type}/${media_type}`) as any
       return response.data || response
     } catch (error) {
-      console.error('Error fetching user rating:', error)
-      return null
+      console.error('Error fetching user rating, using mock data:', error)
+      
+      // Return mock rating if exists
+      return mockUserRatings.find(rating => 
+        rating.tmdb_id === tmdb_id && 
+        rating.content_type === content_type && 
+        rating.media_type === media_type
+      ) || null
     }
   }
 
@@ -188,8 +197,32 @@ export const useUserRatings = () => {
       const response = await apiCall(endpoint) as any
       return response.data || response || []
     } catch (error) {
-      console.error('Error fetching user ratings:', error)
-      return []
+      console.error('Error fetching user ratings, using mock data:', error)
+      
+      // Filter mock data based on filters
+      let filteredData = [...mockUserRatings]
+      
+      if (filters.content_type) {
+        filteredData = filteredData.filter(rating => rating.content_type === filters.content_type)
+      }
+      
+      if (filters.media_type) {
+        filteredData = filteredData.filter(rating => rating.media_type === filters.media_type)
+      }
+      
+      if (filters.mood_rating) {
+        filteredData = filteredData.filter(rating => rating.mood_rating === filters.mood_rating)
+      }
+      
+      if (filters.min_rating) {
+        filteredData = filteredData.filter(rating => rating.rating >= filters.min_rating!)
+      }
+      
+      if (filters.max_rating) {
+        filteredData = filteredData.filter(rating => rating.rating <= filters.max_rating!)
+      }
+      
+      return filteredData
     }
   }
 
