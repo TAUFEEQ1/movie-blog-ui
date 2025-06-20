@@ -132,12 +132,17 @@
 </template>
 
 <script setup lang="ts">
+// Import composables explicitly
+import { useTrending } from '~/composables/useTrending'
+
 // Protect this page with authentication middleware
 definePageMeta({
   middleware: 'auth'
 })
 
+// Import composables
 const { user } = useAuth()
+const { getTrendingMovies } = useTrending()
 
 // Mobile Menu State
 const showMobileMenu = ref(false)
@@ -168,38 +173,52 @@ interface Movie {
 }
 
 // Sample movie data - replace with API calls later
-const trendingMovies = ref<Movie[]>([
-  {
-    id: 1,
-    title: "Openheimer",
-    poster:"https://www.themoviedb.org/t/p/w1280/8Gxv8gSFCU0XGDykEGv7zR1n2ua.jpg",
-    rating: 4.8,
-    genres: ["Thriller", "Detective"],
-    year: 2023,
-    duration: "2h 57m",
-    trailerUrl: "https://youtu.be/bK6ldnjE3Y0"
-  },
-  {
-    id: 2,
-    title: "The Witcher",
-    poster:"https://www.themoviedb.org/t/p/w1280/cZ0d3rtvXPVvuiX22sP79K3Hmjz.jpg",
-    rating: 4.2,
-    genres: ["Drama", "Adventure"],
-    year: 2023,
-    duration: "1h 45m",
-    trailerUrl: "https://www.youtube.com/watch?v=ndl1W4ltcmg"
-  },
-  {
-    id: 3,
-    title: "The Marvels",
-    poster:"https://www.themoviedb.org/t/p/w1280/9GBhzXMFjgcZ3FdR9w3bUMMTps5.jpg",
-    rating: 3.5,
-    genres: ["Action", "Adventure"],
-    year: 2023,
-    duration: "1h 45m",
-    trailerUrl: "https://www.youtube.com/watch?v=wS_qbDztgVY"
+const trendingMovies = ref<Movie[]>([])
+
+// Load trending movies from API
+
+// Load trending data on mount
+onMounted(async () => {
+  try {
+    const trending = await getTrendingMovies(6) // Get 6 trending movies
+    trendingMovies.value = trending
+  } catch (error) {
+    console.error('Error loading trending movies:', error)
+    // Fallback to hardcoded data if API fails
+    trendingMovies.value = [
+      {
+        id: 1,
+        title: "Openheimer",
+        poster:"https://www.themoviedb.org/t/p/w1280/8Gxv8gSFCU0XGDykEGv7zR1n2ua.jpg",
+        rating: 4.8,
+        genres: ["Thriller", "Detective"],
+        year: 2023,
+        duration: "2h 57m",
+        trailerUrl: "https://youtu.be/bK6ldnjE3Y0"
+      },
+      {
+        id: 2,
+        title: "The Witcher",
+        poster:"https://www.themoviedb.org/t/p/w1280/cZ0d3rtvXPVvuiX22sP79K3Hmjz.jpg",
+        rating: 4.2,
+        genres: ["Drama", "Adventure"],
+        year: 2023,
+        duration: "1h 45m",
+        trailerUrl: "https://www.youtube.com/watch?v=ndl1W4ltcmg"
+      },
+      {
+        id: 3,
+        title: "The Marvels",
+        poster:"https://www.themoviedb.org/t/p/w1280/9GBhzXMFjgcZ3FdR9w3bUMMTps5.jpg",
+        rating: 3.5,
+        genres: ["Action", "Adventure"],
+        year: 2023,
+        duration: "1h 45m",
+        trailerUrl: "https://www.youtube.com/watch?v=wS_qbDztgVY"
+      }
+    ]
   }
-])
+})
 
 const comingSoonMovies = ref<Movie[]>([
   {
