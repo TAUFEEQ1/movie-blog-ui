@@ -167,11 +167,11 @@ const currentTopPick = computed(() => topPicks.value[currentIndex.value])
 
 const emit = defineEmits(['play-trailer', 'add-to-watchlist', 'mark-as-watched'])
 
-// Auto-rotate picks every 8 seconds
+// Auto-rotate picks every 2 minutes
 onMounted(() => {
   setInterval(() => {
     currentIndex.value = (currentIndex.value + 1) % topPicks.value.length
-  }, 8000)
+  }, 120000)
 })
 
 const getVideoId = (url: string) => {
