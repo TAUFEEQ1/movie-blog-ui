@@ -564,7 +564,7 @@ const startHeroRotation = () => {
   if (heroRotationInterval) {
     clearInterval(heroRotationInterval)
   }
-  heroRotationInterval = setInterval(rotateHero, 8000) // Change every 8 seconds
+  heroRotationInterval = setInterval(rotateHero, 120000) // Change every 2 minutes
 }
 
 const stopHeroRotation = () => {
