@@ -4,25 +4,11 @@ export default defineNuxtConfig({
   devtools: { enabled: true },
   
   modules: [
-    '@nuxt/ui',
     '@nuxtjs/tailwindcss',
     '@vueuse/nuxt',
-    '@nuxtjs/strapi',
-    '@pinia/nuxt'
+    '@pinia/nuxt',
+    '@nuxt/icon'
   ],
-
-  strapi: {
-    url: process.env.STRAPI_URL || 'http://localhost:1337',
-    prefix: '/api',
-    version: 'v4',
-    cookie: {
-      path: '/',
-      maxAge: 60 * 60 * 24 * 7, // 7 days
-      httpOnly: false,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax'
-    }
-  },
 
   runtimeConfig: {
     public: {

@@ -5,3 +5,7 @@
     </NuxtLayout>
   </div>
 </template>
+
+<script setup lang="ts">
+// Auth initialization is now handled in the auth plugin
+</script>

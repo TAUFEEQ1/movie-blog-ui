@@ -4,11 +4,12 @@ A modern movie blog frontend built with Nuxt 3 and powered by Strapi backend.
 
 ## Features
 
-- 🔐 **Authentication**: Complete user authentication system with Strapi
+- 🔐 **Direct API Authentication**: Direct HTTP calls to Strapi API for reliable authentication
 - 🎬 **Movie Reviews**: Create and manage movie reviews
 - 📱 **Responsive Design**: Modern UI with Tailwind CSS
 - 🚀 **Fast Performance**: Built with Nuxt 3 for optimal performance
 - 🔒 **Protected Routes**: Middleware-based route protection
+- ⚠️ **Robust Error Handling**: Proper handling of Strapi's 400/401 error responses
 
 ## Setup
 
@@ -19,17 +20,20 @@ Make sure you have a Strapi backend running at `http://localhost:1337`. The back
 ### Installation
 
 1. Install dependencies:
-```bash
-npm install
-```
+
+    ```bash
+    npm install
+    ```
 
 2. Create your environment variables:
-```bash
-cp .env.example .env
-```
+
+    ```bash
+    cp .env.example .env
+    ```
 
 3. Update the `.env` file with your Strapi backend URL:
-```
+
+```env
 STRAPI_URL=http://localhost:1337
 ```
 
@@ -54,7 +58,7 @@ The application includes a complete authentication system:
 
 ## Project Structure
 
-```
+```env
 ├── components/          # Vue components
 ├── composables/         # Vue composables
 │   └── useAuth.ts      # Authentication composable

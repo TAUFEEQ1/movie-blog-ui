@@ -13,6 +13,9 @@
         </p>
       </div>
       
+      <!-- Strapi Status Warning -->
+      <StrapiStatus />
+      
       <form class="mt-8 space-y-6" @submit.prevent="handleRegister">
         <div class="rounded-md shadow-sm -space-y-px">
           <div>
