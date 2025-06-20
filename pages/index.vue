@@ -143,6 +143,7 @@ definePageMeta({
 // Import composables
 const { user } = useAuth()
 const { getTrendingMovies } = useTrending()
+const { getComingSoonItems, getTmdbPosterUrl } = useComingSoon()
 
 // Mobile Menu State
 const showMobileMenu = ref(false)
@@ -174,16 +175,34 @@ interface Movie {
 
 // Sample movie data - replace with API calls later
 const trendingMovies = ref<Movie[]>([])
+const comingSoonMovies = ref<Movie[]>([])
 
-// Load trending movies from API
+// Convert Coming Soon API data to Movie interface format
+const convertComingSoonToMovie = (comingSoonItem: any): Movie => {
+  return {
+    id: comingSoonItem.id,
+    title: comingSoonItem.title,
+    poster: getTmdbPosterUrl(comingSoonItem.poster_path),
+    rating: comingSoonItem.tmdb_rating || 0,
+    genres: comingSoonItem.genres || [],
+    year: new Date(comingSoonItem.release_date).getFullYear(),
+    duration: comingSoonItem.runtime ? `${Math.floor(comingSoonItem.runtime / 60)}h ${comingSoonItem.runtime % 60}m` : 'TBA',
+    trailerUrl: comingSoonItem.trailer_url || ''
+  }
+}
 
 // Load trending data on mount
 onMounted(async () => {
   try {
+    // Load trending movies
     const trending = await getTrendingMovies(6) // Get 6 trending movies
     trendingMovies.value = trending
+
+    // Load coming soon movies
+    const comingSoon = await getComingSoonItems({ limit: 6, sortBy: 'release_date' })
+    comingSoonMovies.value = comingSoon.map(convertComingSoonToMovie)
   } catch (error) {
-    console.error('Error loading trending movies:', error)
+    console.error('Error loading movies:', error)
     // Fallback to hardcoded data if API fails
     trendingMovies.value = [
       {
@@ -209,49 +228,50 @@ onMounted(async () => {
       {
         id: 3,
         title: "The Marvels",
-        poster:"https://www.themoviedb.org/t/p/w1280/9GBhzXMFjgcZ3FdR9w3bUMMTps5.jpg",
-        rating: 3.5,
-        genres: ["Action", "Adventure"],
+        poster:"https://www.themoviedb.org/t/p/w1280/DqK9Hag8E6bGl4W0aps2n7GJvbY.jpg",
+        rating: 3.8,
+        genres: ["Action", "Sci-Fi"],
         year: 2023,
         duration: "1h 45m",
         trailerUrl: "https://www.youtube.com/watch?v=wS_qbDztgVY"
       }
     ]
+
+    // Fallback data for coming soon movies
+    comingSoonMovies.value = [
+      {
+        id: 4,
+        title: "Deadpool 3",
+        poster: "https://images.unsplash.com/photo-1635805737707-575885ab0820?w=400&h=600&fit=crop",
+        rating: 4.6,
+        genres: ["Action", "Comedy"],
+        year: 2024,
+        duration: "2h 10m",
+        trailerUrl: "https://www.youtube.com/watch?v=73_1biulkYk"
+      },
+      {
+        id: 5,
+        title: "Avatar 3",
+        poster: "https://images.unsplash.com/photo-1440404653325-ab127d49abc1?w=400&h=600&fit=crop",
+        rating: 4.2,
+        genres: ["Sci-Fi", "Adventure"],
+        year: 2024,
+        duration: "2h 30m",
+        trailerUrl: "https://www.youtube.com/watch?v=d9MyW72ELq0"
+      },
+      {
+        id: 6,
+        title: "Spider-Man 4",
+        poster: "https://images.unsplash.com/photo-1608889476561-6242cfdbf622?w=400&h=600&fit=crop",
+        rating: 4.5,
+        genres: ["Action", "Adventure"],
+        year: 2024,
+        duration: "2h 15m",
+        trailerUrl: "https://www.youtube.com/watch?v=JfVOs4VSpmA"
+      }
+    ]
   }
 })
-
-const comingSoonMovies = ref<Movie[]>([
-  {
-    id: 4,
-    title: "Deadpool 3",
-    poster: "https://images.unsplash.com/photo-1635805737707-575885ab0820?w=400&h=600&fit=crop",
-    rating: 4.6,
-    genres: ["Action", "Comedy"],
-    year: 2024,
-    duration: "2h 10m",
-    trailerUrl: "https://www.youtube.com/watch?v=73_1biulkYk"
-  },
-  {
-    id: 5,
-    title: "Avatar 3",
-    poster: "https://images.unsplash.com/photo-1440404653325-ab127d49abc1?w=400&h=600&fit=crop",
-    rating: 4.2,
-    genres: ["Sci-Fi", "Adventure"],
-    year: 2024,
-    duration: "2h 30m",
-    trailerUrl: "https://www.youtube.com/watch?v=d9MyW72ELq0"
-  },
-  {
-    id: 6,
-    title: "Spider-Man 4",
-    poster: "https://images.unsplash.com/photo-1608889476561-6242cfdbf622?w=400&h=600&fit=crop",
-    rating: 4.5,
-    genres: ["Action", "Adventure"],
-    year: 2024,
-    duration: "2h 15m",
-    trailerUrl: "https://www.youtube.com/watch?v=JfVOs4VSpmA"
-  }
-])
 
 const recentlyWatchedMovies = ref<Movie[]>([
   {
@@ -356,7 +376,7 @@ const viewAllTrending = () => {
 }
 
 const viewAllComingSoon = () => {
-  navigateTo('/movies/coming-soon')
+  navigateTo('/coming-soon')
 }
 
 const viewAllRecentlyWatched = () => {

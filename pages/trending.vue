@@ -200,9 +200,9 @@
 <script setup lang="ts">
 // Import composables explicitly
 import { useTrending } from '~/composables/useTrending'
-import { useTrendingRatings } from '~/composables/useTrendingRatings'
+import { useUserRatings } from '~/composables/useUserRatings'
 import type { TrendingItem } from '~/composables/useTrending'
-import type { TrendingRating } from '~/composables/useTrendingRatings'
+import type { UserRating } from '~/composables/useUserRatings'
 
 // Protect this page with authentication middleware
 definePageMeta({
