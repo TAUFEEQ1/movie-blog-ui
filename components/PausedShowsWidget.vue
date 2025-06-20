@@ -44,7 +44,7 @@
           <div class="flex-1 min-w-0">
             <div class="flex items-start justify-between mb-2">
               <div>
-                <h3 class="font-medium text-gray-900">
+                <h3 class="font-medium text-gray-900 truncate">
                   {{ show.title || show.media_item?.title }}
                   <span v-if="show.season_number" class="text-purple-600 font-semibold">
                     - Season {{ show.season_number }}
