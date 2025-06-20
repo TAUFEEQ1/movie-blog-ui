@@ -150,7 +150,7 @@ export const useTrending = () => {
       id: item.tmdb_id,
       title: truncateTitle(item.title, 60), // Truncate long titles for better UI display
       poster: item.poster_path ? `${tmdbImageBaseUrl}${item.poster_path}` : '',
-      rating: item.tmdb_rating ? Number((item.tmdb_rating / 2).toFixed(1)) : 0, // Convert to 5-star rating
+      rating: item.tmdb_rating ? Number(item.tmdb_rating.toFixed(1)) : 0, // Use raw TMDB rating
       genres: item.genres || [],
       year: item.release_year || new Date(item.release_date || '').getFullYear() || 0,
       duration: item.runtime ? `${Math.floor(item.runtime / 60)}h ${item.runtime % 60}m` : '',
