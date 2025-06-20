@@ -341,7 +341,7 @@
         <!-- Trending Grid -->
         <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
           <TrendingCard 
-            v-for="item in displayedItems" 
+            v-for="item in paginatedItems" 
             :key="`${item.tmdb_id}-${item.type}`"
             :item="item"
             :user-rating="userRatings.get(`${item.tmdb_id}-${item.type}`)"
@@ -359,18 +359,90 @@
           <p class="text-gray-500">No trending items found</p>
         </div>
 
-        <!-- Load More -->
-        <div 
-          v-if="hasMore" 
-          class="text-center mt-8"
-        >
-          <button 
-            @click="loadMore"
-            :disabled="loading"
-            class="bg-blue-600 text-white px-6 py-3 rounded-xl font-semibold hover:bg-blue-700 transition-colors disabled:opacity-50"
-          >
-            {{ loading ? 'Loading...' : 'Load More' }}
-          </button>
+        <!-- Pagination Controls -->
+        <div v-if="showPagination" class="flex flex-col sm:flex-row items-center justify-between gap-4 mt-8 p-4 bg-white rounded-lg border">
+          <div class="text-sm text-gray-600">
+            {{ paginationInfo }}
+          </div>
+          
+          <div class="flex items-center gap-2">
+            <!-- Previous Button -->
+            <button
+              @click="prevPage"
+              :disabled="currentPage === 1"
+              class="px-3 py-2 text-sm bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center gap-1"
+            >
+              <Icon name="mdi:chevron-left" class="w-4 h-4" />
+              Previous
+            </button>
+
+            <!-- Page Numbers -->
+            <div class="flex items-center gap-1">
+              <!-- First page -->
+              <button
+                v-if="currentPage > 3"
+                @click="goToPage(1)"
+                class="px-3 py-2 text-sm bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
+              >
+                1
+              </button>
+              
+              <!-- Ellipsis -->
+              <span v-if="currentPage > 4" class="px-2 text-gray-400">...</span>
+              
+              <!-- Previous pages -->
+              <button
+                v-for="page in Math.max(1, currentPage - 2)"
+                v-show="page < currentPage && page >= Math.max(1, currentPage - 2)"
+                :key="`prev-${page}`"
+                @click="goToPage(page)"
+                class="px-3 py-2 text-sm bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
+              >
+                {{ page }}
+              </button>
+              
+              <!-- Current page -->
+              <button
+                class="px-3 py-2 text-sm bg-blue-600 text-white rounded-lg font-semibold"
+                disabled
+              >
+                {{ currentPage }}
+              </button>
+              
+              <!-- Next pages -->
+              <button
+                v-for="page in Math.min(totalPages, currentPage + 2)"
+                v-show="page > currentPage && page <= Math.min(totalPages, currentPage + 2)"
+                :key="`next-${page}`"
+                @click="goToPage(page)"
+                class="px-3 py-2 text-sm bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
+              >
+                {{ page }}
+              </button>
+              
+              <!-- Ellipsis -->
+              <span v-if="currentPage < totalPages - 3" class="px-2 text-gray-400">...</span>
+              
+              <!-- Last page -->
+              <button
+                v-if="currentPage < totalPages - 2"
+                @click="goToPage(totalPages)"
+                class="px-3 py-2 text-sm bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
+              >
+                {{ totalPages }}
+              </button>
+            </div>
+
+            <!-- Next Button -->
+            <button
+              @click="nextPage"
+              :disabled="currentPage === totalPages"
+              class="px-3 py-2 text-sm bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center gap-1"
+            >
+              Next
+              <Icon name="mdi:chevron-right" class="w-4 h-4" />
+            </button>
+          </div>
         </div>
       </div>
     </div>
@@ -430,11 +502,14 @@ let heroRotationInterval: NodeJS.Timeout | null = null
 // Search and filter state
 const searchQuery = ref('')
 const selectedPlatform = ref('')
-
-// Filters and sorting
 const selectedType = ref('')
-const sortOrder = ref('rating_desc')
 const ratingFilter = ref('all')
+const sortOrder = ref('rating_desc')
+
+// Client-side pagination state
+const currentPage = ref(1)
+const itemsPerPage = ref(20)
+const paginatedItems = ref<TrendingItem[]>([])
 
 // Modals
 const isRatingModalOpen = ref(false)
@@ -445,8 +520,6 @@ const currentVideoUrl = ref('')
 
 // Loading states
 const loading = ref(false)
-const hasMore = ref(true)
-const currentPage = ref(1)
 
 // Methods
 const handleSearch = (query: string) => {
@@ -592,7 +665,45 @@ const applyFilters = () => {
   }
 
   displayedItems.value = filtered
+  
+  // Reset to first page when filters change
+  currentPage.value = 1
+  
   sortItems()
+  updatePagination()
+}
+
+const updatePagination = () => {
+  const startIndex = (currentPage.value - 1) * itemsPerPage.value
+  const endIndex = startIndex + itemsPerPage.value
+  paginatedItems.value = displayedItems.value.slice(startIndex, endIndex)
+}
+
+const goToPage = (page: number) => {
+  const totalPages = Math.ceil(displayedItems.value.length / itemsPerPage.value)
+  if (page >= 1 && page <= totalPages) {
+    currentPage.value = page
+    updatePagination()
+    
+    // Scroll to top of trending grid
+    const trendingGrid = document.querySelector('.grid')
+    if (trendingGrid) {
+      trendingGrid.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    }
+  }
+}
+
+const nextPage = () => {
+  const totalPages = Math.ceil(displayedItems.value.length / itemsPerPage.value)
+  if (currentPage.value < totalPages) {
+    goToPage(currentPage.value + 1)
+  }
+}
+
+const prevPage = () => {
+  if (currentPage.value > 1) {
+    goToPage(currentPage.value - 1)
+  }
 }
 
 // Computed properties
@@ -611,6 +722,27 @@ const ratingFilterLabel = computed(() => {
     case 'unfavorable': return 'Unfavorable'
     default: return ''
   }
+})
+
+const totalPages = computed(() => {
+  return Math.ceil(displayedItems.value.length / itemsPerPage.value)
+})
+
+const startIndex = computed(() => {
+  return (currentPage.value - 1) * itemsPerPage.value + 1
+})
+
+const endIndex = computed(() => {
+  return Math.min(currentPage.value * itemsPerPage.value, displayedItems.value.length)
+})
+
+const paginationInfo = computed(() => {
+  if (displayedItems.value.length === 0) return 'No items'
+  return `${startIndex.value}-${endIndex.value} of ${displayedItems.value.length}`
+})
+
+const showPagination = computed(() => {
+  return totalPages.value > 1
 })
 
 // Search timeout for debouncing
@@ -638,37 +770,17 @@ const getVideoSource = (url: string): string | null => {
   return url
 }
 
-const fetchTrendingItems = async (reset = true) => {
+const fetchTrendingItems = async () => {
   try {
     loading.value = true
     
-    if (reset) {
-      currentPage.value = 1
-      trendingItems.value = []
-    }
-
-    const filters: any = {
-      page: currentPage.value,
-      pageSize: 20
-    }
-
-    // Only apply server-side type filter if no local filters are active
-    if (selectedType.value && !hasActiveFilters.value) {
-      filters.type = selectedType.value
-    }
-
-    const response = await getAllTrending(filters)
+    // Fetch all trending items without pagination
+    const response = await getAllTrending()
     
-    if (reset) {
-      trendingItems.value = response.data
-    } else {
-      trendingItems.value.push(...response.data)
-    }
-
-    hasMore.value = currentPage.value < response.meta.pagination.pageCount
+    trendingItems.value = response.data
     
     // Set hero items from first few trending items
-    if (reset && response.data.length > 0) {
+    if (response.data.length > 0) {
       heroItems.value = response.data.slice(0, 5)
       currentHeroItem.value = heroItems.value[0]
       await loadHeroRating()
@@ -729,15 +841,12 @@ const sortItems = () => {
       displayedItems.value.sort((a, b) => a.title.localeCompare(b.title))
       break
   }
-}
-
-const loadMore = async () => {
-  if (!hasMore.value || loading.value) return
   
-  currentPage.value++
-  await fetchTrendingItems(false)
+  // Update pagination after sorting
+  updatePagination()
 }
 
+// Modal methods
 const openRatingModal = (item: TrendingItem) => {
   selectedItem.value = item
   selectedItemRating.value = userRatings.value.get(`${item.tmdb_id}-${item.type}`) || null
@@ -751,37 +860,23 @@ const closeRatingModal = () => {
 }
 
 const handleItemRated = async (rating: UserRating | null) => {
-  if (rating) {
-    const key = `${rating.tmdb_id}-${rating.media_type}`
+  if (selectedItem.value && rating) {
+    // Update local cache
+    const key = `${selectedItem.value.tmdb_id}-${selectedItem.value.type}`
     userRatings.value.set(key, rating)
     
     // Update hero rating if it's the current hero item
     if (currentHeroItem.value && 
-        currentHeroItem.value.tmdb_id === rating.tmdb_id && 
-        currentHeroItem.value.type === rating.media_type) {
+        currentHeroItem.value.tmdb_id === selectedItem.value.tmdb_id &&
+        currentHeroItem.value.type === selectedItem.value.type) {
       currentHeroRating.value = rating
     }
-  } else {
-    // Handle rating removal
-    if (selectedItem.value) {
-      const key = `${selectedItem.value.tmdb_id}-${selectedItem.value.type}`
-      userRatings.value.delete(key)
-      
-      // Clear hero rating if it's the current hero item
-      if (currentHeroItem.value && 
-          currentHeroItem.value.tmdb_id === selectedItem.value.tmdb_id && 
-          currentHeroItem.value.type === selectedItem.value.type) {
-        currentHeroRating.value = null
-      }
-    }
   }
-  
-  applyFilters()
   closeRatingModal()
 }
 
-const playTrailer = (videoUrl: string) => {
-  currentVideoUrl.value = videoUrl
+const playTrailer = (trailerUrl: string) => {
+  currentVideoUrl.value = trailerUrl
   isVideoModalOpen.value = true
 }
 
