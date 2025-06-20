@@ -8,10 +8,7 @@
     ></div>
 
     <div class="flex gap-0 lg:gap-6 p-3 lg:p-6">
-      <!-- Mob// Loading states
-const loading = ref(false)
-const hasMore = ref(true)
-const currentPage = ref(1) Toggle -->
+      <!-- Mobile Menu Toggle -->
       <button
         @click="showMobileMenu = !showMobileMenu"
         class="fixed top-4 left-4 z-50 lg:hidden p-2 bg-white rounded-lg shadow-md"
@@ -33,7 +30,7 @@ const currentPage = ref(1) Toggle -->
         <TopBar @search="handleSearch" />
 
         <!-- Hero Section with Auto-Rotating Trending Movies -->
-        <div class="relative bg-gradient-to-r from-blue-900 to-purple-900 rounded-3xl overflow-hidden mb-8 h-96 transition-all duration-500">
+        <div class="relative bg-gradient-to-r from-blue-900 to-purple-900 rounded-3xl overflow-hidden mb-8 h-96 md:h-[500px] transition-all duration-500">
           <!-- Background Video/Image -->
           <div 
             v-if="currentHeroItem"
@@ -200,48 +197,143 @@ const currentPage = ref(1) Toggle -->
 
         <!-- Controls and Filters -->
         <div class="bg-white rounded-2xl p-6 mb-8">
-          <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+          <div class="flex flex-col gap-6">
+            <!-- Header -->
             <div>
               <h2 class="text-2xl font-bold text-gray-900 mb-2">All Trending Content</h2>
               <p class="text-gray-600">Discover what's popular right now</p>
             </div>
 
-            <div class="flex items-center gap-4">
-              <!-- Type Filter -->
-              <select 
-                v-model="selectedType" 
-                class="border border-gray-300 rounded-lg px-4 py-2 bg-white"
-                @change="() => fetchTrendingItems()"
-              >
-                <option value="">All Types</option>
-                <option value="movie">Movies</option>
-                <option value="tv">TV Shows</option>
-              </select>
+            <!-- Search and Filters -->
+            <div class="space-y-4">
+              <!-- Search Bar -->
+              <div class="relative">
+                <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <Icon name="mdi:magnify" class="w-5 h-5 text-gray-400" />
+                </div>
+                <input
+                  v-model="searchQuery"
+                  type="text"
+                  placeholder="Search trending movies and TV shows..."
+                  class="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 placeholder-gray-400"
+                  @input="handleSearchInput"
+                />
+                <button
+                  v-if="searchQuery"
+                  @click="clearSearch"
+                  class="absolute inset-y-0 right-0 pr-3 flex items-center"
+                >
+                  <Icon name="mdi:close-circle" class="w-5 h-5 text-gray-400 hover:text-gray-600 transition-colors" />
+                </button>
+              </div>
 
-              <!-- Sort Order -->
-              <select 
-                v-model="sortOrder" 
-                class="border border-gray-300 rounded-lg px-4 py-2 bg-white"
-                @change="() => sortItems()"
-              >
-                <option value="rating_desc">TMDB Rating (High to Low)</option>
-                <option value="rating_asc">TMDB Rating (Low to High)</option>
-                <option value="trending_rank">Trending Rank</option>
-                <option value="release_date">Release Date</option>
-              </select>
+              <!-- Filter Controls -->
+              <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                <div class="flex flex-wrap items-center gap-3">
+                  <!-- Type Filter -->
+                  <select 
+                    v-model="selectedType" 
+                    class="border border-gray-300 rounded-lg px-4 py-2 bg-white text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    @change="() => applyFilters()"
+                  >
+                    <option value="">All Types</option>
+                    <option value="movie">Movies</option>
+                    <option value="tv">TV Shows</option>
+                  </select>
 
-              <!-- My Ratings Filter -->
-              <select 
-                v-model="ratingFilter" 
-                class="border border-gray-300 rounded-lg px-4 py-2 bg-white"
-                @change="() => applyRatingFilter()"
-              >
-                <option value="all">All Items</option>
-                <option value="rated">My Rated</option>
-                <option value="unrated">Unrated</option>
-                <option value="notable">Notable</option>
-                <option value="unfavorable">Unfavorable</option>
-              </select>
+                  <!-- Platform Filter -->
+                  <select 
+                    v-model="selectedPlatform" 
+                    class="border border-gray-300 rounded-lg px-4 py-2 bg-white text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    @change="() => applyFilters()"
+                  >
+                    <option value="">All Platforms</option>
+                    <option value="Netflix">Netflix</option>
+                    <option value="Hulu">Hulu</option>
+                    <option value="Disney+">Disney+</option>
+                    <option value="HBO Max">HBO Max</option>
+                    <option value="Prime Video">Prime Video</option>
+                    <option value="Apple TV+">Apple TV+</option>
+                    <option value="Theaters">Theaters</option>
+                  </select>
+
+                  <!-- My Ratings Filter -->
+                  <select 
+                    v-model="ratingFilter" 
+                    class="border border-gray-300 rounded-lg px-4 py-2 bg-white text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    @change="() => applyFilters()"
+                  >
+                    <option value="all">All Items</option>
+                    <option value="rated">My Rated</option>
+                    <option value="unrated">Unrated</option>
+                    <option value="notable">Notable</option>
+                    <option value="unfavorable">Unfavorable</option>
+                  </select>
+                </div>
+
+                <!-- Sort and Clear -->
+                <div class="flex items-center gap-3">
+                  <!-- Sort Order -->
+                  <select 
+                    v-model="sortOrder" 
+                    class="border border-gray-300 rounded-lg px-4 py-2 bg-white text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    @change="() => sortItems()"
+                  >
+                    <option value="rating_desc">TMDB Rating ↓</option>
+                    <option value="rating_asc">TMDB Rating ↑</option>
+                    <option value="trending_rank">Trending Rank</option>
+                    <option value="release_date">Release Date</option>
+                    <option value="title">Title A-Z</option>
+                  </select>
+
+                  <!-- Clear Filters -->
+                  <button
+                    v-if="hasActiveFilters"
+                    @click="clearAllFilters"
+                    class="px-4 py-2 text-sm bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors flex items-center gap-2"
+                  >
+                    <Icon name="mdi:filter-off" class="w-4 h-4" />
+                    Clear
+                  </button>
+                </div>
+              </div>
+
+              <!-- Active Filters Summary -->
+              <div v-if="hasActiveFilters" class="flex flex-wrap items-center gap-2">
+                <span class="text-sm text-gray-600">Active filters:</span>
+                <span v-if="searchQuery" class="inline-flex items-center gap-1 px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded-full">
+                  Search: "{{ searchQuery }}"
+                  <button @click="clearSearch" class="hover:text-blue-900">
+                    <Icon name="mdi:close" class="w-3 h-3" />
+                  </button>
+                </span>
+                <span v-if="selectedType" class="inline-flex items-center gap-1 px-2 py-1 bg-purple-100 text-purple-800 text-xs rounded-full">
+                  Type: {{ selectedType === 'movie' ? 'Movies' : 'TV Shows' }}
+                  <button @click="selectedType = ''; applyFilters()" class="hover:text-purple-900">
+                    <Icon name="mdi:close" class="w-3 h-3" />
+                  </button>
+                </span>
+                <span v-if="selectedPlatform" class="inline-flex items-center gap-1 px-2 py-1 bg-green-100 text-green-800 text-xs rounded-full">
+                  Platform: {{ selectedPlatform }}
+                  <button @click="selectedPlatform = ''; applyFilters()" class="hover:text-green-900">
+                    <Icon name="mdi:close" class="w-3 h-3" />
+                  </button>
+                </span>
+                <span v-if="ratingFilter !== 'all'" class="inline-flex items-center gap-1 px-2 py-1 bg-orange-100 text-orange-800 text-xs rounded-full">
+                  Rating: {{ ratingFilterLabel }}
+                  <button @click="ratingFilter = 'all'; applyFilters()" class="hover:text-orange-900">
+                    <Icon name="mdi:close" class="w-3 h-3" />
+                  </button>
+                </span>
+              </div>
+
+              <!-- Results Count -->
+              <div class="text-sm text-gray-600">
+                Showing {{ displayedItems.length }} of {{ trendingItems.length }} trending items
+                <span v-if="searchQuery || selectedType || selectedPlatform || ratingFilter !== 'all'">
+                  (filtered)
+                </span>
+              </div>
             </div>
           </div>
         </div>
@@ -335,6 +427,10 @@ const showVideo = ref(true)
 const heroVideoRef = ref<HTMLVideoElement | null>(null)
 let heroRotationInterval: NodeJS.Timeout | null = null
 
+// Search and filter state
+const searchQuery = ref('')
+const selectedPlatform = ref('')
+
 // Filters and sorting
 const selectedType = ref('')
 const sortOrder = ref('rating_desc')
@@ -420,6 +516,106 @@ const onVideoError = () => {
   showVideo.value = false
 }
 
+// Search and filter methods
+const handleSearchInput = () => {
+  // Debounce search to avoid too many filter calls
+  clearTimeout(searchTimeout)
+  searchTimeout = setTimeout(() => {
+    applyFilters()
+  }, 300)
+}
+
+const clearSearch = () => {
+  searchQuery.value = ''
+  applyFilters()
+}
+
+const clearAllFilters = () => {
+  searchQuery.value = ''
+  selectedType.value = ''
+  selectedPlatform.value = ''
+  ratingFilter.value = 'all'
+  applyFilters()
+}
+
+const applyFilters = () => {
+  let filtered = [...trendingItems.value]
+
+  // Apply search filter
+  if (searchQuery.value.trim()) {
+    const query = searchQuery.value.toLowerCase().trim()
+    filtered = filtered.filter(item => 
+      item.title.toLowerCase().includes(query) ||
+      item.overview?.toLowerCase().includes(query) ||
+      item.genres?.some(genre => genre.toLowerCase().includes(query)) ||
+      item.platform.toLowerCase().includes(query)
+    )
+  }
+
+  // Apply type filter
+  if (selectedType.value) {
+    filtered = filtered.filter(item => item.type === selectedType.value)
+  }
+
+  // Apply platform filter
+  if (selectedPlatform.value) {
+    filtered = filtered.filter(item => item.platform === selectedPlatform.value)
+  }
+
+  // Apply rating filter
+  switch (ratingFilter.value) {
+    case 'rated':
+      filtered = filtered.filter(item => 
+        userRatings.value.has(`${item.tmdb_id}-${item.type}`)
+      )
+      break
+    case 'unrated':
+      filtered = filtered.filter(item => 
+        !userRatings.value.has(`${item.tmdb_id}-${item.type}`)
+      )
+      break
+    case 'notable':
+      filtered = filtered.filter(item => {
+        const rating = userRatings.value.get(`${item.tmdb_id}-${item.type}`)
+        return rating && (rating.is_notable || rating.rating >= 8)
+      })
+      break
+    case 'unfavorable':
+      filtered = filtered.filter(item => {
+        const rating = userRatings.value.get(`${item.tmdb_id}-${item.type}`)
+        return rating && (rating.is_unfavorable || rating.rating <= 4)
+      })
+      break
+    default:
+      // Show all
+      break
+  }
+
+  displayedItems.value = filtered
+  sortItems()
+}
+
+// Computed properties
+const hasActiveFilters = computed(() => {
+  return searchQuery.value.trim() !== '' || 
+         selectedType.value !== '' || 
+         selectedPlatform.value !== '' || 
+         ratingFilter.value !== 'all'
+})
+
+const ratingFilterLabel = computed(() => {
+  switch (ratingFilter.value) {
+    case 'rated': return 'My Rated'
+    case 'unrated': return 'Unrated'
+    case 'notable': return 'Notable'
+    case 'unfavorable': return 'Unfavorable'
+    default: return ''
+  }
+})
+
+// Search timeout for debouncing
+let searchTimeout: NodeJS.Timeout
+
 // Utility function to extract YouTube video ID
 const getYouTubeVideoId = (url: string): string | null => {
   if (!url) return null
@@ -456,7 +652,8 @@ const fetchTrendingItems = async (reset = true) => {
       pageSize: 20
     }
 
-    if (selectedType.value) {
+    // Only apply server-side type filter if no local filters are active
+    if (selectedType.value && !hasActiveFilters.value) {
       filters.type = selectedType.value
     }
 
@@ -478,8 +675,7 @@ const fetchTrendingItems = async (reset = true) => {
     }
 
     await loadUserRatings()
-    applyRatingFilter()
-    sortItems()
+    applyFilters()
   } catch (error) {
     console.error('Error fetching trending items:', error)
   } finally {
@@ -511,40 +707,6 @@ const loadHeroRating = async () => {
   }
 }
 
-const applyRatingFilter = () => {
-  let filtered = [...trendingItems.value]
-
-  switch (ratingFilter.value) {
-    case 'rated':
-      filtered = filtered.filter(item => 
-        userRatings.value.has(`${item.tmdb_id}-${item.type}`)
-      )
-      break
-    case 'unrated':
-      filtered = filtered.filter(item => 
-        !userRatings.value.has(`${item.tmdb_id}-${item.type}`)
-      )
-      break
-    case 'notable':
-      filtered = filtered.filter(item => {
-        const rating = userRatings.value.get(`${item.tmdb_id}-${item.type}`)
-        return rating && (rating.is_notable || rating.rating >= 8)
-      })
-      break
-    case 'unfavorable':
-      filtered = filtered.filter(item => {
-        const rating = userRatings.value.get(`${item.tmdb_id}-${item.type}`)
-        return rating && (rating.is_unfavorable || rating.rating <= 4)
-      })
-      break
-    default:
-      // Show all
-      break
-  }
-
-  displayedItems.value = filtered
-}
-
 const sortItems = () => {
   switch (sortOrder.value) {
     case 'rating_desc':
@@ -562,6 +724,9 @@ const sortItems = () => {
         const dateB = new Date(b.release_date || '1900-01-01').getTime()
         return dateB - dateA
       })
+      break
+    case 'title':
+      displayedItems.value.sort((a, b) => a.title.localeCompare(b.title))
       break
   }
 }
@@ -611,7 +776,7 @@ const handleItemRated = async (rating: UserRating | null) => {
     }
   }
   
-  applyRatingFilter()
+  applyFilters()
   closeRatingModal()
 }
 
