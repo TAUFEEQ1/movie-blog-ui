@@ -6,13 +6,23 @@
         <h2 class="text-2xl font-bold text-gray-900">{{ title }}</h2>
         <Icon v-if="icon" :name="icon" class="w-6 h-6 text-orange-500" />
       </div>
-      <button 
-        v-if="showViewAll"
-        class="text-blue-600 hover:text-blue-700 font-medium transition-colors"
-        @click="$emit('view-all')"
-      >
-        View all
-      </button>
+      <div class="flex items-center gap-3">
+        <button 
+          v-if="showShuffle"
+          class="flex items-center gap-2 text-gray-600 hover:text-gray-700 font-medium transition-colors"
+          @click="$emit('shuffle')"
+        >
+          <Icon name="mdi:shuffle" class="w-5 h-5" />
+          Shuffle
+        </button>
+        <button 
+          v-if="showViewAll"
+          class="text-blue-600 hover:text-blue-700 font-medium transition-colors"
+          @click="$emit('view-all')"
+        >
+          View all
+        </button>
+      </div>
     </div>
 
     <!-- Movies Grid -->
@@ -54,8 +64,9 @@ interface Props {
   movies: Movie[]
   icon?: string
   showViewAll?: boolean
+  showShuffle?: boolean
 }
 
 defineProps<Props>()
-defineEmits(['play-trailer', 'toggle-favorite', 'view-all'])
+defineEmits(['play-trailer', 'toggle-favorite', 'view-all', 'shuffle'])
 </script>

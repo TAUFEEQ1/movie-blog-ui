@@ -52,9 +52,11 @@
               icon="mdi:fire"
               :movies="trendingMovies"
               :show-view-all="true"
+              :show-shuffle="true"
               @play-trailer="openVideoModal"
               @toggle-favorite="handleToggleFavorite"
               @view-all="viewAllTrending"
+              @shuffle="shuffleTrending"
             />
 
             <!-- Coming Soon -->
@@ -372,7 +374,7 @@ const resumeWatching = (entry: any) => {
 
 // View All Functions
 const viewAllTrending = () => {
-  navigateTo('/movies/trending')
+  navigateTo('/trending')
 }
 
 const viewAllComingSoon = () => {
@@ -389,6 +391,17 @@ const viewAllTopMovies = () => {
 
 const viewAllRecommended = () => {
   navigateTo('/movies/recommended')
+}
+
+// Shuffle function for trending movies
+const shuffleTrending = () => {
+  // Fisher-Yates shuffle algorithm
+  const shuffled = [...trendingMovies.value]
+  for (let i = shuffled.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]]
+  }
+  trendingMovies.value = shuffled
 }
 
 // Journal Integration Methods
