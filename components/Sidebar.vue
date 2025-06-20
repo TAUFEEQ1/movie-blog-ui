@@ -66,6 +66,8 @@ interface NavigationItem {
 
 const navigationItems: NavigationItem[] = [
   { name: 'Dashboard', path: '/', icon: 'mdi:view-dashboard' },
+  { name: 'Trending Now', path: '/trending', icon: 'mdi:fire' },
+  { name: 'Coming Soon', path: '/coming-soon', icon: 'mdi:calendar-clock' },
   { name: 'My Journal', path: '/journal', icon: 'mdi:book-open' },
   { name: 'Watchlist', path: '/watchlist', icon: 'mdi:playlist-plus' },
   { name: 'Watched', path: '/watched', icon: 'mdi:check-circle', badge: 42 },
