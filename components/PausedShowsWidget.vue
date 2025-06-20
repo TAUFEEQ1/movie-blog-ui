@@ -57,9 +57,13 @@
                   </span>
                 </p>
               </div>
-              <div class="text-xs text-gray-500">
-                {{ formatDate(show.updated_at) }}
-              </div>
+              <button 
+                @click="continueWatching(show)"
+                class="text-gray-400 hover:text-gray-600 transition-colors"
+                title="Edit entry"
+              >
+                <Icon name="mdi:open-in-new" class="w-4 h-4" />
+              </button>
             </div>
             
             <!-- Progress indicator -->
@@ -77,34 +81,6 @@
             </div>
             <div v-else-if="show.episode" class="mb-3">
               <p class="text-xs text-gray-600">Currently on episode {{ show.episode }}</p>
-            </div>
-            
-            <div v-if="show.notes_reflections" class="text-sm text-gray-600 mb-3 italic">
-              "{{ show.notes_reflections }}"
-            </div>
-            
-            <div class="flex items-center gap-2">
-              <button 
-                @click="continueWatching(show)"
-                class="flex items-center gap-1 bg-green-600 hover:bg-green-700 text-white px-3 py-1 rounded text-sm font-medium transition-colors"
-              >
-                <Icon name="mdi:play" class="w-4 h-4" />
-                Continue
-              </button>
-              <button 
-                @click="editShow(show)"
-                class="flex items-center gap-1 border border-gray-200 hover:bg-gray-50 px-3 py-1 rounded text-sm transition-colors"
-              >
-                <Icon name="mdi:pencil" class="w-4 h-4" />
-                Edit
-              </button>
-              <button 
-                @click="dropShow(show)"
-                class="flex items-center gap-1 text-red-600 hover:text-red-700 px-3 py-1 rounded text-sm transition-colors"
-              >
-                <Icon name="mdi:close" class="w-4 h-4" />
-                Drop
-              </button>
             </div>
           </div>
         </div>
