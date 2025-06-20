@@ -248,6 +248,7 @@ const quickStatusOptions = [
   { key: 'planned_to_watch', label: 'Plan to Watch' },
   { key: 'watched', label: 'Watched' },
   { key: 'rewatched', label: 'Rewatch' },
+  { key: 'paused', label: 'Paused' },
   { key: 'dropped', label: 'Drop' }
 ]
 
@@ -299,6 +300,15 @@ const deleteEntry = () => {
 }
 
 const updateStatus = (newStatus: string) => {
+  // For TV series being marked as paused, redirect to edit modal since episode is required
+  if (newStatus === 'paused' && props.entry?.media_item?.type === 'tv_series') {
+    // Close this modal and open edit modal
+    emit('close')
+    emit('edit', props.entry)
+    return
+  }
+  
+  // For other status changes, emit the status update
   emit('status-updated', { entry: props.entry, status: newStatus })
 }
 

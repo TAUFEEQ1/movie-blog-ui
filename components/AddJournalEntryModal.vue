@@ -195,6 +195,23 @@
             </p>
           </div>
 
+          <!-- Total Episodes (for paused TV series) -->
+          <div v-if="selectedMedia?.type === 'tv_series' && form.watch_status === 'paused'">
+            <label class="block text-sm font-medium text-gray-700 mb-2">
+              Total Episodes (optional)
+            </label>
+            <input
+              v-model.number="form.total_episodes"
+              type="number"
+              min="1"
+              placeholder="e.g. 24"
+              class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            />
+            <p class="text-sm text-gray-500 mt-1">
+              For progress tracking (current: {{ form.episode || 0 }}/{{ form.total_episodes || '?' }})
+            </p>
+          </div>
+
           <!-- Rating -->
           <div v-if="form.watch_status === 'watched' || form.watch_status === 'rewatched'">
             <label class="block text-sm font-medium text-gray-700 mb-2">
@@ -327,6 +344,7 @@ const form = ref({
   end_date: '',
   season_number: undefined as number | undefined,
   episode: undefined as number | undefined,
+  total_episodes: undefined as number | undefined,
   notes_reflections: ''
 })
 
@@ -379,6 +397,7 @@ const resetForm = () => {
     end_date: '',
     season_number: undefined,
     episode: undefined,
+    total_episodes: undefined,
     notes_reflections: ''
   }
   selectedMedia.value = null
@@ -531,6 +550,11 @@ const handleSubmit = async () => {
     // Only include episode number if it's provided and for TV series
     if (selectedMedia.value.type === 'tv_series' && form.value.episode) {
       entryData.episode = form.value.episode
+    }
+
+    // Only include total episodes if it's provided and for TV series
+    if (selectedMedia.value.type === 'tv_series' && form.value.total_episodes) {
+      entryData.total_episodes = form.value.total_episodes
     }
     
     const response: any = await strapiCall('/journal-entries/tmdb/create', {

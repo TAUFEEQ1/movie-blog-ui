@@ -103,6 +103,23 @@
             </p>
           </div>
 
+          <!-- Total Episodes (for paused TV series) -->
+          <div v-if="entry?.media_item?.type === 'tv_series' && form.watch_status === 'paused'">
+            <label class="block text-sm font-medium text-gray-700 mb-2">
+              Total Episodes (optional)
+            </label>
+            <input
+              v-model.number="form.total_episodes"
+              type="number"
+              min="1"
+              placeholder="e.g. 24"
+              class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            />
+            <p class="text-sm text-gray-500 mt-1">
+              For progress tracking (current: {{ form.episode || 0 }}/{{ form.total_episodes || '?' }})
+            </p>
+          </div>
+
           <!-- Rating -->
           <div v-if="form.watch_status === 'watched' || form.watch_status === 'rewatched'">
             <label class="block text-sm font-medium text-gray-700 mb-2">
@@ -231,6 +248,7 @@ interface JournalEntry {
   end_date?: string
   season_number?: number
   episode?: number
+  total_episodes?: number
   notes_reflections?: string
   media_item: MediaItem
   user: any
@@ -254,6 +272,7 @@ const form = ref({
   end_date: '',
   season_number: undefined as number | undefined,
   episode: undefined as number | undefined,
+  total_episodes: undefined as number | undefined,
   notes_reflections: ''
 })
 
@@ -286,6 +305,7 @@ watch(() => props.entry, (entry) => {
       end_date: entry.end_date || '',
       season_number: entry.season_number,
       episode: entry.episode,
+      total_episodes: entry.total_episodes,
       notes_reflections: entry.notes_reflections || ''
     }
   }
@@ -344,6 +364,10 @@ const handleSubmit = async () => {
     
     if (form.value.episode && form.value.episode > 0) {
       updateData.episode = form.value.episode
+    }
+    
+    if (form.value.total_episodes && form.value.total_episodes > 0) {
+      updateData.total_episodes = form.value.total_episodes
     }
     
     if (form.value.notes_reflections?.trim()) {

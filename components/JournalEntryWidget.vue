@@ -123,6 +123,7 @@ interface JournalEntry {
   end_date?: string
   season_number?: number
   episode?: number
+  total_episodes?: number
   notes_reflections?: string
   media_item: MediaItem
   user: any

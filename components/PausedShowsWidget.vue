@@ -62,6 +62,23 @@
               </div>
             </div>
             
+            <!-- Progress indicator -->
+            <div v-if="show.episode && show.total_episodes" class="mb-3">
+              <div class="flex items-center justify-between text-xs text-gray-600 mb-1">
+                <span>Episode {{ show.episode }} of {{ show.total_episodes }}</span>
+                <span>{{ Math.round((show.episode / show.total_episodes) * 100) }}% complete</span>
+              </div>
+              <div class="bg-gray-100 rounded-full h-2">
+                <div 
+                  class="bg-orange-500 h-2 rounded-full transition-all" 
+                  :style="{ width: `${Math.min((show.episode / show.total_episodes) * 100, 100)}%` }"
+                ></div>
+              </div>
+            </div>
+            <div v-else-if="show.episode" class="mb-3">
+              <p class="text-xs text-gray-600">Currently on episode {{ show.episode }}</p>
+            </div>
+            
             <div v-if="show.notes_reflections" class="text-sm text-gray-600 mb-3 italic">
               "{{ show.notes_reflections }}"
             </div>
@@ -125,6 +142,7 @@ interface JournalEntry {
   end_date?: string
   season_number?: number
   episode?: number
+  total_episodes?: number
   notes_reflections?: string
   media_item: MediaItem
   user: any
