@@ -469,7 +469,7 @@ const loading = ref(false)
 
 // Methods
 const handleSearch = (query: string) => {
-  console.log('Searching for:', query)
+  navigateTo(`/search?q=${encodeURIComponent(query)}`)
 }
 
 // Hero carousel
