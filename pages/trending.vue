@@ -431,7 +431,7 @@ definePageMeta({
 
 // Composables
 const { user } = useAuth()
-const { getAllTrending, getActiveTrending } = useTrending()
+const { getAllTrending } = useTrending()
 
 // Reactive state
 const showMobileMenu = ref(false)
