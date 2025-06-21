@@ -781,7 +781,11 @@ const fetchTrendingItems = async () => {
     
     // Set hero items from first few trending items
     if (response.data.length > 0) {
-      heroItems.value = response.data.slice(0, 5)
+      // Pick any 5 randomly from response.data for heroItems
+      heroItems.value = response.data
+        .slice()
+        .sort(() => Math.random() - 0.5)
+        .slice(0, 5)
       currentHeroItem.value = heroItems.value[0]
       await loadHeroRating()
     }
