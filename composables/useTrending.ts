@@ -174,64 +174,6 @@ export const useTrending = () => {
     })
   }
 
-  // Get active trending items
-  const getActiveTrending = async (filters: TrendingFilters = {}): Promise<TrendingItem[]> => {
-    try {
-      // If user is not authenticated, return mock data
-      if (!user.value || !token.value) {
-        console.log('User not authenticated, using mock data for trending')
-        
-        // Filter mock data based on filters
-        let filteredData = [...mockTrendingData].filter(item => item.is_active)
-        
-        if (filters.type) {
-          filteredData = filteredData.filter(item => item.type === filters.type)
-        }
-        
-        if (filters.platform) {
-          filteredData = filteredData.filter(item => item.platform === filters.platform)
-        }
-        
-        if (filters.limit) {
-          filteredData = filteredData.slice(0, filters.limit)
-        }
-        
-        return filteredData
-      }
-
-      const params = new URLSearchParams()
-      
-      if (filters.type) params.append('type', filters.type)
-      if (filters.platform) params.append('platform', filters.platform)
-      if (filters.limit) params.append('limit', filters.limit.toString())
-      
-      const queryString = params.toString()
-      const endpoint = `/trendings/active${queryString ? `?${queryString}` : ''}`
-      
-      const response = await apiCall(endpoint)
-      return response as TrendingItem[]
-    } catch (error) {
-      console.error('Error fetching active trending items, using mock data:', error)
-      
-      // Filter mock data based on filters
-      let filteredData = [...mockTrendingData].filter(item => item.is_active)
-      
-      if (filters.type) {
-        filteredData = filteredData.filter(item => item.type === filters.type)
-      }
-      
-      if (filters.platform) {
-        filteredData = filteredData.filter(item => item.platform === filters.platform)
-      }
-      
-      if (filters.limit) {
-        filteredData = filteredData.slice(0, filters.limit)
-      }
-      
-      return filteredData
-    }
-  }
-
   // Get trending items by platform
   const getTrendingByPlatform = async (platform: string, filters: Omit<TrendingFilters, 'platform'> = {}): Promise<TrendingItem[]> => {
     try {
@@ -413,14 +355,9 @@ export const useTrending = () => {
 
   // Get trending movies formatted for UI
   const getTrendingMovies = async (limit: number = 10) => {
-    const trendingItems = await getActiveTrending({ type: 'movie', limit })
-    return trendingItems.map(transformTrendingToMovie)
-  }
-
-  // Get trending TV shows formatted for UI
-  const getTrendingTVShows = async (limit: number = 10) => {
-    const trendingItems = await getActiveTrending({ type: 'tv', limit })
-    return trendingItems.map(transformTrendingToMovie)
+    const allTrending = await getAllTrending()
+    const trendingMovies = allTrending.data.filter(item => item.type === 'movie').slice(0, limit)
+    return trendingMovies.map(transformTrendingToMovie)
   }
 
   // Get trending by platform formatted for UI
@@ -430,11 +367,9 @@ export const useTrending = () => {
   }
 
   return {
-    getActiveTrending,
     getTrendingByPlatform,
     getAllTrending,
     getTrendingMovies,
-    getTrendingTVShows,
     getTrendingByPlatformForUI,
     transformTrendingToMovie,
     truncateTitle

@@ -8,17 +8,14 @@
 
     <!-- Search and Notifications -->
     <div class="flex items-center gap-4">
-      <!-- Search Bar -->
-      <div class="relative">
-        <Icon name="mdi:magnify" class="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
-        <input 
-          v-model="searchQuery"
-          type="text" 
-          placeholder="Search movies, shows..." 
-          class="pl-10 pr-4 py-2 w-64 lg:w-80 bg-gray-100 rounded-xl border-0 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all"
-          @keyup.enter="performSearch"
-        />
-      </div>
+      <!-- Search Icon -->
+      <button 
+        @click="openSearchModal"
+        class="p-3 hover:bg-gray-100 rounded-xl transition-colors group"
+        title="Search movies and TV shows"
+      >
+        <Icon name="mdi:magnify" class="w-6 h-6 text-gray-600 group-hover:text-blue-600 transition-colors" />
+      </button>
 
       <!-- Notifications -->
       <button class="relative p-2 hover:bg-gray-100 rounded-xl transition-colors">
@@ -49,20 +46,34 @@
         </div>
       </div>
     </div>
+
+    <!-- Search Modal -->
+    <SearchModal 
+      :is-open="isSearchModalOpen"
+      @close="closeSearchModal"
+      @search="handleSearch"
+    />
   </header>
 </template>
 
 <script setup lang="ts">
 // State
-const searchQuery = ref('')
 const showUserMenu = ref(false)
+const isSearchModalOpen = ref(false)
 
 const emit = defineEmits(['search'])
 
-const performSearch = () => {
-  if (searchQuery.value.trim()) {
-    emit('search', searchQuery.value)
-  }
+// Search modal methods
+const openSearchModal = () => {
+  isSearchModalOpen.value = true
+}
+
+const closeSearchModal = () => {
+  isSearchModalOpen.value = false
+}
+
+const handleSearch = (query: string) => {
+  emit('search', query)
 }
 
 // Close user menu when clicking outside
