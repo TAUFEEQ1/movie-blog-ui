@@ -113,13 +113,6 @@
                   <span class="text-white font-semibold">{{ currentHeroItem?.tmdb_rating?.toFixed(1) }}</span>
                   <span class="text-white opacity-75">TMDB</span>
                 </div>
-
-                <!-- User Rating Display -->
-                <div v-if="currentHeroRating" class="flex items-center gap-2">
-                  <Icon name="mdi:account-star" class="w-5 h-5 text-green-400" />
-                  <span class="text-white font-semibold">{{ currentHeroRating.rating.toFixed(1) }}</span>
-                  <span class="text-white opacity-75">Your Rating</span>
-                </div>
               </div>
 
               <!-- Action Buttons -->
@@ -131,15 +124,6 @@
                 >
                   <Icon name="mdi:play" class="w-5 h-5" />
                   Watch Trailer
-                </button>
-
-                <button 
-                  v-if="currentHeroItem"
-                  @click="openRatingModal(currentHeroItem)"
-                  class="bg-blue-600 text-white px-6 py-3 rounded-xl font-semibold hover:bg-blue-700 transition-colors flex items-center gap-2"
-                >
-                  <Icon name="mdi:star-outline" class="w-5 h-5" />
-                  {{ currentHeroRating ? 'Update Rating' : 'Rate' }}
                 </button>
               </div>
             </div>
@@ -256,19 +240,6 @@
                     <option value="Apple TV+">Apple TV+</option>
                     <option value="Theaters">Theaters</option>
                   </select>
-
-                  <!-- My Ratings Filter -->
-                  <select 
-                    v-model="ratingFilter" 
-                    class="border border-gray-300 rounded-lg px-4 py-2 bg-white text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                    @change="() => applyFilters()"
-                  >
-                    <option value="all">All Items</option>
-                    <option value="rated">My Rated</option>
-                    <option value="unrated">Unrated</option>
-                    <option value="notable">Notable</option>
-                    <option value="unfavorable">Unfavorable</option>
-                  </select>
                 </div>
 
                 <!-- Sort and Clear -->
@@ -319,18 +290,12 @@
                     <Icon name="mdi:close" class="w-3 h-3" />
                   </button>
                 </span>
-                <span v-if="ratingFilter !== 'all'" class="inline-flex items-center gap-1 px-2 py-1 bg-orange-100 text-orange-800 text-xs rounded-full">
-                  Rating: {{ ratingFilterLabel }}
-                  <button @click="ratingFilter = 'all'; applyFilters()" class="hover:text-orange-900">
-                    <Icon name="mdi:close" class="w-3 h-3" />
-                  </button>
-                </span>
               </div>
 
               <!-- Results Count -->
               <div class="text-sm text-gray-600">
                 Showing {{ displayedItems.length }} of {{ trendingItems.length }} trending items
-                <span v-if="searchQuery || selectedType || selectedPlatform || ratingFilter !== 'all'">
+                <span v-if="searchQuery || selectedType || selectedPlatform">
                   (filtered)
                 </span>
               </div>
@@ -344,8 +309,6 @@
             v-for="item in paginatedItems" 
             :key="`${item.tmdb_id}-${item.type}`"
             :item="item"
-            :user-rating="userRatings.get(`${item.tmdb_id}-${item.type}`)"
-            @rate="openRatingModal"
             @play-trailer="playTrailer"
           />
         </div>
@@ -447,16 +410,6 @@
       </div>
     </div>
 
-    <!-- Rating Modal -->
-    <UniversalRatingModal 
-      v-if="isRatingModalOpen && selectedItem"
-      :item="selectedItem"
-      :content-type="'trending'"
-      :existing-rating="selectedItemRating"
-      @close="closeRatingModal"
-      @rated="handleItemRated"
-    />
-
     <!-- Video Modal -->
     <VideoModal 
       :is-open="isVideoModalOpen"
@@ -469,9 +422,7 @@
 <script setup lang="ts">
 // Import composables explicitly
 import { useTrending } from '~/composables/useTrending'
-import { useUserRatings } from '~/composables/useUserRatings'
 import type { TrendingItem } from '~/composables/useTrending'
-import type { UserRating } from '~/composables/useUserRatings'
 
 // Protect this page with authentication middleware
 definePageMeta({
@@ -481,17 +432,16 @@ definePageMeta({
 // Composables
 const { user } = useAuth()
 const { getAllTrending, getActiveTrending } = useTrending()
-const { getMyRating, getMyRatings, rateItem } = useUserRatings()
 
 // Reactive state
 const showMobileMenu = ref(false)
 const trendingItems = ref<TrendingItem[]>([])
 const displayedItems = ref<TrendingItem[]>([])
-const userRatings = ref(new Map<string, UserRating>())
 const currentHeroItem = ref<TrendingItem | null>(null)
-const currentHeroRating = ref<UserRating | null>(null)
 
 // Hero carousel state
+interface HeroPoolItem extends TrendingItem {}
+const heroPool: HeroPoolItem[] = [];
 const heroIndex = ref(0)
 const heroItems = ref<TrendingItem[]>([])
 const isAutoRotating = ref(true)
@@ -503,7 +453,6 @@ let heroRotationInterval: NodeJS.Timeout | null = null
 const searchQuery = ref('')
 const selectedPlatform = ref('')
 const selectedType = ref('')
-const ratingFilter = ref('all')
 const sortOrder = ref('rating_desc')
 
 // Client-side pagination state
@@ -512,9 +461,6 @@ const itemsPerPage = ref(20)
 const paginatedItems = ref<TrendingItem[]>([])
 
 // Modals
-const isRatingModalOpen = ref(false)
-const selectedItem = ref<TrendingItem | null>(null)
-const selectedItemRating = ref<UserRating | null>(null)
 const isVideoModalOpen = ref(false)
 const currentVideoUrl = ref('')
 
@@ -530,12 +476,20 @@ const handleSearch = (query: string) => {
 const rotateHero = () => {
   if (heroItems.value.length > 1 && isAutoRotating.value) {
     heroIndex.value = (heroIndex.value + 1) % heroItems.value.length
+    const previousIndex = heroIndex.value
     currentHeroItem.value = heroItems.value[heroIndex.value]
     showVideo.value = false // Reset video state
     nextTick(() => {
       showVideo.value = true // Trigger video load
     })
-    loadHeroRating()
+    if (previousIndex === heroItems.value.length - 1 && heroIndex.value === 0) {
+      const rotationCompleteEvent = new CustomEvent('hero-rotation-complete', {
+        detail: {
+          items: heroItems.value
+        }
+      })
+      window.dispatchEvent(rotationCompleteEvent)
+    }
   }
 }
 
@@ -547,7 +501,6 @@ const goToHeroItem = (index: number) => {
     nextTick(() => {
       showVideo.value = true
     })
-    loadHeroRating()
   }
 }
 
@@ -607,7 +560,6 @@ const clearAllFilters = () => {
   searchQuery.value = ''
   selectedType.value = ''
   selectedPlatform.value = ''
-  ratingFilter.value = 'all'
   applyFilters()
 }
 
@@ -633,35 +585,6 @@ const applyFilters = () => {
   // Apply platform filter
   if (selectedPlatform.value) {
     filtered = filtered.filter(item => item.platform === selectedPlatform.value)
-  }
-
-  // Apply rating filter
-  switch (ratingFilter.value) {
-    case 'rated':
-      filtered = filtered.filter(item => 
-        userRatings.value.has(`${item.tmdb_id}-${item.type}`)
-      )
-      break
-    case 'unrated':
-      filtered = filtered.filter(item => 
-        !userRatings.value.has(`${item.tmdb_id}-${item.type}`)
-      )
-      break
-    case 'notable':
-      filtered = filtered.filter(item => {
-        const rating = userRatings.value.get(`${item.tmdb_id}-${item.type}`)
-        return rating && (rating.is_notable || rating.rating >= 8)
-      })
-      break
-    case 'unfavorable':
-      filtered = filtered.filter(item => {
-        const rating = userRatings.value.get(`${item.tmdb_id}-${item.type}`)
-        return rating && (rating.is_unfavorable || rating.rating <= 4)
-      })
-      break
-    default:
-      // Show all
-      break
   }
 
   displayedItems.value = filtered
@@ -710,18 +633,7 @@ const prevPage = () => {
 const hasActiveFilters = computed(() => {
   return searchQuery.value.trim() !== '' || 
          selectedType.value !== '' || 
-         selectedPlatform.value !== '' || 
-         ratingFilter.value !== 'all'
-})
-
-const ratingFilterLabel = computed(() => {
-  switch (ratingFilter.value) {
-    case 'rated': return 'My Rated'
-    case 'unrated': return 'Unrated'
-    case 'notable': return 'Notable'
-    case 'unfavorable': return 'Unfavorable'
-    default: return ''
-  }
+         selectedPlatform.value !== ''
 })
 
 const totalPages = computed(() => {
@@ -770,6 +682,16 @@ const getVideoSource = (url: string): string | null => {
   return url
 }
 
+const onRotationComplete = () => {
+  // Move the first 5 items to the end of the pool
+  const rotated = heroPool.splice(0, 5)
+  heroPool.push(...rotated)
+
+  // Take the next 5 items to display
+  heroItems.value = heroPool.slice(0, 5)
+}
+
+
 const fetchTrendingItems = async () => {
   try {
     loading.value = true
@@ -778,48 +700,19 @@ const fetchTrendingItems = async () => {
     const response = await getAllTrending()
     
     trendingItems.value = response.data
+    heroPool.push(...response.data)
     
     // Set hero items from first few trending items
     if (response.data.length > 0) {
-      // Pick any 5 randomly from response.data for heroItems
-      heroItems.value = response.data
-        .slice()
-        .sort(() => Math.random() - 0.5)
-        .slice(0, 5)
-      currentHeroItem.value = heroItems.value[0]
-      await loadHeroRating()
+      heroItems.value = heroPool.slice(0, 5)
+      currentHeroItem.value = heroItems.value[0] as TrendingItem
     }
 
-    await loadUserRatings()
     applyFilters()
   } catch (error) {
     console.error('Error fetching trending items:', error)
   } finally {
     loading.value = false
-  }
-}
-
-const loadUserRatings = async () => {
-  try {
-    const ratings = await getMyRatings({ content_type: 'trending' })
-    userRatings.value.clear()
-    
-    ratings.forEach(rating => {
-      const key = `${rating.tmdb_id}-${rating.media_type}`
-      userRatings.value.set(key, rating)
-    })
-  } catch (error) {
-    console.error('Error loading user ratings:', error)
-  }
-}
-
-const loadHeroRating = async () => {
-  if (currentHeroItem.value) {
-    currentHeroRating.value = await getMyRating(
-      currentHeroItem.value.tmdb_id, 
-      'trending',
-      currentHeroItem.value.type
-    )
   }
 }
 
@@ -850,35 +743,7 @@ const sortItems = () => {
   updatePagination()
 }
 
-// Modal methods
-const openRatingModal = (item: TrendingItem) => {
-  selectedItem.value = item
-  selectedItemRating.value = userRatings.value.get(`${item.tmdb_id}-${item.type}`) || null
-  isRatingModalOpen.value = true
-}
-
-const closeRatingModal = () => {
-  isRatingModalOpen.value = false
-  selectedItem.value = null
-  selectedItemRating.value = null
-}
-
-const handleItemRated = async (rating: UserRating | null) => {
-  if (selectedItem.value && rating) {
-    // Update local cache
-    const key = `${selectedItem.value.tmdb_id}-${selectedItem.value.type}`
-    userRatings.value.set(key, rating)
-    
-    // Update hero rating if it's the current hero item
-    if (currentHeroItem.value && 
-        currentHeroItem.value.tmdb_id === selectedItem.value.tmdb_id &&
-        currentHeroItem.value.type === selectedItem.value.type) {
-      currentHeroRating.value = rating
-    }
-  }
-  closeRatingModal()
-}
-
+// Video modal methods
 const playTrailer = (trailerUrl: string) => {
   currentVideoUrl.value = trailerUrl
   isVideoModalOpen.value = true
@@ -895,6 +760,8 @@ onMounted(async () => {
   
   // Start hero rotation
   startHeroRotation()
+
+  window.addEventListener('hero-rotation-complete', onRotationComplete)
 })
 
 // Cleanup on unmount
