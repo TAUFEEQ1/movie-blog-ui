@@ -68,7 +68,7 @@ const recentActivity = ref<Activity[]>([
   },
   {
     id: 2,
-    action: "added_to_journal",
+    action: "added_to_wishlist",
     content: {
       id: 2,
       title: "You",
@@ -120,8 +120,8 @@ const getActivityDescription = (action: string) => {
   switch (action) {
     case 'watched':
       return 'Finished watching'
-    case 'added_to_journal':
-      return 'Added to journal'
+    case 'added_to_wishlist':
+      return 'Added to wishlist'
     case 'planned_to_watch':
       return 'Added to watchlist'
     case 'rated':
@@ -135,8 +135,8 @@ const getActivityIcon = (action: string) => {
   switch (action) {
     case 'watched':
       return 'mdi:check-circle'
-    case 'added_to_journal':
-      return 'mdi:notebook-plus'
+    case 'added_to_wishlist':
+      return 'mdi:heart-plus'
     case 'planned_to_watch':
       return 'mdi:bookmark-plus'
     case 'rated':
@@ -150,8 +150,8 @@ const getActivityIconBg = (action: string) => {
   switch (action) {
     case 'watched':
       return 'bg-green-500'
-    case 'added_to_journal':
-      return 'bg-blue-500'
+    case 'added_to_wishlist':
+      return 'bg-pink-500'
     case 'planned_to_watch':
       return 'bg-yellow-500'
     case 'rated':
@@ -165,8 +165,8 @@ const getStatusColor = (action: string) => {
   switch (action) {
     case 'watched':
       return 'bg-green-500'
-    case 'added_to_journal':
-      return 'bg-blue-500'
+    case 'added_to_wishlist':
+      return 'bg-pink-500'
     case 'planned_to_watch':
       return 'bg-yellow-500'
     case 'rated':

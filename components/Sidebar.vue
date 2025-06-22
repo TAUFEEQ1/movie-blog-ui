@@ -5,7 +5,7 @@
       <div class="w-8 h-8 bg-purple-600 rounded-lg flex items-center justify-center">
         <Icon name="mdi:notebook" class="w-5 h-5 text-white" />
       </div>
-      <span class="text-xl font-bold text-gray-900">CineJournal</span>
+      <span class="text-xl font-bold text-gray-900">TrendingNow</span>
     </div>
 
     <!-- Navigation -->
@@ -38,7 +38,7 @@
         />
         <div>
           <div class="font-medium text-gray-900">{{ user?.username || 'Movie Enthusiast' }}</div>
-          <div class="text-sm text-gray-500">{{ user?.email || 'Personal Journal' }}</div>
+          <div class="text-sm text-gray-500">{{ user?.email || 'Trending Explorer' }}</div>
         </div>
       </div>
       
@@ -65,20 +65,10 @@ interface NavigationItem {
 }
 
 const navigationItems: NavigationItem[] = [
-  { name: 'Dashboard', path: '/', icon: 'mdi:view-dashboard' },
-  { name: 'Trending Now', path: '/trending', icon: 'mdi:fire' },
-  { name: 'Coming Soon', path: '/coming-soon', icon: 'mdi:calendar-clock' },
-  { name: 'My Journal', path: '/journal', icon: 'mdi:book-open' },
-  { name: 'Watchlist', path: '/watchlist', icon: 'mdi:playlist-plus' },
-  { name: 'Watched', path: '/watched', icon: 'mdi:check-circle', badge: 42 },
-  { name: 'Recently Watched', path: '/recent', icon: 'mdi:clock-outline' },
-  { name: 'Rewatched', path: '/rewatched', icon: 'mdi:repeat' },
+  { name: 'Trending Now', path: '/', icon: 'mdi:fire' },
   { name: 'Top Picks', path: '/top-picks', icon: 'mdi:trophy' },
-  { name: 'Monthly Favorites', path: '/monthly', icon: 'mdi:calendar-star' },
-  { name: 'Paused Shows', path: '/paused', icon: 'mdi:pause-circle', badge: 3 },
-  { name: 'Upcoming Releases', path: '/upcoming', icon: 'mdi:calendar-clock' },
-  { name: 'New Seasons', path: '/seasons', icon: 'mdi:television-play', badge: 5 },
-  { name: 'Stats', path: '/stats', icon: 'mdi:chart-line' },
+  { name: 'Wishlist', path: '/wishlist', icon: 'mdi:playlist-plus' },
+  { name: 'Coming Soon', path: '/coming-soon', icon: 'mdi:calendar-clock' },
   { name: 'Settings', path: '/settings', icon: 'mdi:cog' }
 ]
 
