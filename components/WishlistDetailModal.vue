@@ -221,7 +221,7 @@ interface Emits {
 const props = defineProps<Props>()
 const emit = defineEmits<Emits>()
 
-const { findTrendingByTmdbId } = useTrending()
+const { fetchTrailer } = useMedia()
 
 // State for trailer
 const trailerData = ref<{ trailerUrl: string | null; embedUrl: string | null } | null>(null)
@@ -242,19 +242,13 @@ const fetchTrailerData = async () => {
   
   trailerLoading.value = true
   try {
-    // Find the trending item with the same tmdb_id
-    const trendingItem = await findTrendingByTmdbId(props.item.tmdb_id)
+    // Fetch trailer directly from TMDB API using media composable
+    const trailerResponse = await fetchTrailer(props.item.tmdb_id, props.item.type)
     
-    if (trendingItem && trendingItem.trailer_url) {
-      // Convert YouTube watch URL to embed URL
-      let embedUrl = trendingItem.trailer_url
-      if (embedUrl.includes('watch?v=')) {
-        embedUrl = embedUrl.replace('watch?v=', 'embed/')
-      }
-      
+    if (trailerResponse && trailerResponse.trailerUrl) {
       trailerData.value = {
-        trailerUrl: trendingItem.trailer_url,
-        embedUrl: embedUrl
+        trailerUrl: trailerResponse.trailerUrl,
+        embedUrl: trailerResponse.embedUrl
       }
     } else {
       trailerData.value = null

@@ -10,11 +10,9 @@ interface TrailerResponse {
 }
 
 export const useMedia = () => {
-  const config = useRuntimeConfig()
-  
   const fetchTrailer = async (tmdbId: number, type: 'movie' | 'tv'): Promise<TrailerResponse | null> => {
     try {
-      const data = await $fetch<TrailerResponse>(`${config.public.apiUrl}/api/media/${tmdbId}/trailer?type=${type}`)
+      const data = await $fetch<TrailerResponse>(`/api/media/${tmdbId}/trailer?type=${type}`)
       return data
     } catch (error) {
       console.error('Error fetching trailer:', error)
