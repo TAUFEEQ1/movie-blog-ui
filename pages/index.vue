@@ -335,12 +335,21 @@
       :video-url="currentVideoUrl"
       @close="closeVideoModal"
     />
+
+    <!-- Wishlist Modal -->
+    <WishlistModal
+      :is-open="isWishlistModalOpen"
+      :movie-data="selectedMovieForWishlist"
+      @close="closeWishlistModal"
+      @added="handleWishlistAdded"
+    />
   </div>
 </template>
 
 <script setup lang="ts">
 // Import composables explicitly
 import { useTrending } from '~/composables/useTrending'
+import { useWishlist } from '~/composables/useWishlist'
 
 // Protect this page with authentication middleware
 definePageMeta({
@@ -351,6 +360,7 @@ definePageMeta({
 const { user } = useAuth()
 const { getAllTrending } = useTrending()
 const { getComingSoonItems, getTmdbPosterUrl } = useComingSoon()
+const { fetchWishlist, removeFromWishlistByTmdbId, wishlistItems: wishlistData } = useWishlist()
 
 // Mobile Menu State
 const showMobileMenu = ref(false)
@@ -367,6 +377,10 @@ interface VideoInfo {
 const isVideoModalOpen = ref(false)
 const currentVideoUrl = ref('')
 const currentVideoInfo = ref<VideoInfo | undefined>(undefined)
+
+// Wishlist Modal State
+const isWishlistModalOpen = ref(false)
+const selectedMovieForWishlist = ref<any>(null)
 
 // Trending State
 const loading = ref(false)
@@ -438,8 +452,19 @@ const closeVideoModal = () => {
 // Wishlist Integration Methods
 const addToWishlist = (movie: any) => {
   console.log('Adding to wishlist:', movie.title)
-  // TODO: Implement wishlist functionality
-  // For now, this is a placeholder
+  selectedMovieForWishlist.value = movie
+  isWishlistModalOpen.value = true
+}
+
+const closeWishlistModal = () => {
+  isWishlistModalOpen.value = false
+  selectedMovieForWishlist.value = null
+}
+
+const handleWishlistAdded = async () => {
+  // Refresh wishlist data
+  await loadWishlistData()
+  closeWishlistModal()
 }
 
 // Hero navigation methods
@@ -633,9 +658,24 @@ const fetchTrendingItems = async () => {
 }
 
 // Wishlist management
-const removeFromWishlist = (item: any) => {
-  console.log('Removing from wishlist:', item.title)
-  // TODO: Implement remove from wishlist
+const loadWishlistData = async () => {
+  try {
+    await fetchWishlist()
+    wishlistItems.value = [...(wishlistData.value || [])]
+  } catch (error) {
+    console.error('Error loading wishlist:', error)
+    wishlistItems.value = []
+  }
+}
+
+const removeFromWishlist = async (item: any) => {
+  try {
+    console.log('Removing from wishlist:', item.title)
+    await removeFromWishlistByTmdbId(item.tmdb_id)
+    await loadWishlistData()
+  } catch (error) {
+    console.error('Error removing from wishlist:', error)
+  }
 }
 
 const viewAllWishlist = () => {
@@ -644,7 +684,10 @@ const viewAllWishlist = () => {
 
 // Initialize
 onMounted(async () => {
-  await fetchTrendingItems()
+  await Promise.all([
+    fetchTrendingItems(),
+    loadWishlistData()
+  ])
   
   // Start hero rotation
   startHeroRotation()
