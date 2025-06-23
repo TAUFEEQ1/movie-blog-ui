@@ -106,6 +106,59 @@
               </div>
             </div>
 
+            <!-- Keyword Filter -->
+            <div class="mb-6">
+              <div class="flex items-center justify-between mb-3">
+                <label class="text-sm font-medium text-gray-700">Keywords</label>
+                <button
+                  @click="openKeywordModal"
+                  :disabled="keywordsLoading"
+                  class="text-xs text-blue-600 hover:text-blue-800 transition-colors disabled:opacity-50"
+                >
+                  {{ keywordsLoading ? 'Loading...' : (selectedKeywords?.length || 0) > 0 ? 'Edit' : 'Select' }}
+                </button>
+              </div>
+              
+              <!-- Selected Keywords Display -->
+              <div v-if="selectedKeywords && selectedKeywords.length > 0" class="space-y-2">
+                <div class="flex flex-wrap gap-2">
+                  <span
+                    v-for="keyword in displayedKeywords"
+                    :key="keyword"
+                    class="inline-flex items-center gap-1 px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-xs"
+                  >
+                    {{ keyword }}
+                    <button
+                      @click="removeKeyword(keyword)"
+                      class="text-blue-600 hover:text-blue-800"
+                    >
+                      <Icon name="mdi:close" class="w-3 h-3" />
+                    </button>
+                  </span>
+                  <button
+                    v-if="hasMoreKeywords"
+                    @click="openKeywordModal"
+                    class="inline-flex items-center gap-1 px-3 py-1 bg-gray-100 text-gray-600 rounded-full text-xs hover:bg-gray-200 transition-colors"
+                  >
+                    +{{ (selectedKeywords?.length || 0) - 4 }} more
+                  </button>
+                </div>
+              </div>
+              
+              <!-- Empty State -->
+              <div v-else class="text-center py-4 border border-dashed border-gray-300 rounded-lg">
+                <Icon name="mdi:tag-outline" class="w-6 h-6 text-gray-400 mx-auto mb-2" />
+                <p class="text-xs text-gray-500 mb-2">No keywords selected</p>
+                <button
+                  @click="openKeywordModal"
+                  :disabled="keywordsLoading"
+                  class="text-xs text-blue-600 hover:text-blue-800 transition-colors disabled:opacity-50"
+                >
+                  {{ keywordsLoading ? 'Extracting keywords...' : 'Browse Keywords' }}
+                </button>
+              </div>
+            </div>
+
             <!-- Rating Range -->
             <div class="mb-6">
               <label class="block text-sm font-medium text-gray-700 mb-3">Minimum Rating</label>
@@ -160,7 +213,7 @@
               <div class="flex items-center justify-between">
                 <div class="flex items-center gap-3">
                   <span class="text-sm text-gray-600">
-                    {{ filteredItems.length }} {{ filteredItems.length === 1 ? 'result' : 'results' }} found
+                    {{ filteredItems?.length || 0 }} {{ (filteredItems?.length || 0) === 1 ? 'result' : 'results' }} found
                   </span>
                   <div v-if="activeFiltersCount > 0" class="flex items-center gap-2">
                     <span class="text-xs text-gray-500">•</span>
@@ -201,7 +254,7 @@
             </div>
 
             <!-- Empty State -->
-            <div v-else-if="filteredItems.length === 0" class="text-center py-12">
+            <div v-else-if="!filteredItems || filteredItems.length === 0" class="text-center py-12">
               <Icon name="mdi:movie-search" class="w-16 h-16 text-gray-300 mx-auto mb-4" />
               <h3 class="text-lg font-medium text-gray-900 mb-2">No results found</h3>
               <p class="text-gray-600 mb-4">Try adjusting your filters or search terms</p>
@@ -297,11 +350,22 @@
       :video-url="currentVideoUrl"
       @close="closeVideoModal"
     />
+
+    <!-- Keyword Selection Modal -->
+    <KeywordSelectionModal
+      :show="showKeywordModal"
+      :keywords="extractedKeywords"
+      :selected-keywords="selectedKeywords"
+      @close="showKeywordModal = false"
+      @update:selected-keywords="onKeywordsUpdated"
+      @apply="applyFilters"
+    />
   </div>
 </template>
 
 <script setup lang="ts">
 import type { TrendingItem } from '~/composables/useTrending'
+import type { ExtractedKeyword } from '~/composables/useKeywordExtraction'
 
 // Set page metadata
 definePageMeta({
@@ -310,20 +374,27 @@ definePageMeta({
 
 // Composables
 const { getAllTrending } = useTrending()
+const { extractKeywordsFromItems, filterItemsByKeywords } = useKeywordExtraction()
 
 // State
 const showMobileMenu = ref(false)
 const loading = ref(false)
+const keywordsLoading = ref(false)
 const allItems = ref<TrendingItem[]>([])
 const filteredItems = ref<TrendingItem[]>([])
 const searchQuery = ref('')
 const selectedTypes = ref<string[]>(['movie', 'tv'])
 const selectedPlatforms = ref<string[]>([])
+const selectedKeywords = ref<string[]>([])
 const minRating = ref(0)
 const sortBy = ref('trending_rank')
 const viewMode = ref<'grid' | 'list'>('grid')
 const currentPage = ref(1)
 const itemsPerPage = 20
+
+// Keyword state
+const extractedKeywords = ref<ExtractedKeyword[]>([])
+const showKeywordModal = ref(false)
 
 // Video modal state
 const isVideoModalOpen = ref(false)
@@ -345,20 +416,31 @@ const platforms = [
 const activeFiltersCount = computed(() => {
   let count = 0
   if (searchQuery.value) count++
-  if (selectedTypes.value.length < 2) count++
-  if (selectedPlatforms.value.length > 0) count++
+  if (selectedTypes.value && selectedTypes.value.length < 2) count++
+  if (selectedPlatforms.value && selectedPlatforms.value.length > 0) count++
+  if (selectedKeywords.value && selectedKeywords.value.length > 0) count++
   if (minRating.value > 0) count++
   if (sortBy.value !== 'trending_rank') count++
   return count
 })
 
+const displayedKeywords = computed(() => {
+  return selectedKeywords.value ? selectedKeywords.value.slice(0, 4) : []
+})
+
+const hasMoreKeywords = computed(() => {
+  return selectedKeywords.value && selectedKeywords.value.length > 4
+})
+
 const paginatedItems = computed(() => {
+  if (!filteredItems.value || !Array.isArray(filteredItems.value)) return []
   const start = (currentPage.value - 1) * itemsPerPage
   const end = start + itemsPerPage
   return filteredItems.value.slice(start, end)
 })
 
 const totalPages = computed(() => {
+  if (!filteredItems.value || !Array.isArray(filteredItems.value)) return 1
   return Math.ceil(filteredItems.value.length / itemsPerPage)
 })
 
@@ -366,13 +448,25 @@ const totalPages = computed(() => {
 const fetchTrendingItems = async () => {
   try {
     loading.value = true
+    keywordsLoading.value = true
+    
     const response = await getAllTrending()
-    allItems.value = response.data
+    allItems.value = response.data || []
+    
+    // Extract keywords from all items (client-side only)
+    if (process.client && allItems.value.length > 0) {
+      const keywordStats = extractKeywordsFromItems(allItems.value)
+      extractedKeywords.value = keywordStats.topKeywords
+    }
+    
     applyFilters()
   } catch (error) {
     console.error('Error fetching trending items:', error)
+    allItems.value = []
+    extractedKeywords.value = []
   } finally {
     loading.value = false
+    keywordsLoading.value = false
   }
 }
 
@@ -387,26 +481,36 @@ const togglePlatform = (platform: string) => {
 }
 
 const applyFilters = () => {
+  if (!allItems.value || !Array.isArray(allItems.value)) {
+    filteredItems.value = []
+    return
+  }
+  
   let items = [...allItems.value]
 
   // Search filter
   if (searchQuery.value) {
     const query = searchQuery.value.toLowerCase()
     items = items.filter(item => 
-      item.title.toLowerCase().includes(query) ||
+      item.title?.toLowerCase().includes(query) ||
       item.overview?.toLowerCase().includes(query) ||
       item.genres?.some(genre => genre.toLowerCase().includes(query))
     )
   }
 
   // Type filter
-  if (selectedTypes.value.length > 0 && selectedTypes.value.length < 2) {
+  if (selectedTypes.value && selectedTypes.value.length > 0 && selectedTypes.value.length < 2) {
     items = items.filter(item => selectedTypes.value.includes(item.type))
   }
 
   // Platform filter
-  if (selectedPlatforms.value.length > 0) {
+  if (selectedPlatforms.value && selectedPlatforms.value.length > 0) {
     items = items.filter(item => selectedPlatforms.value.includes(item.platform))
+  }
+
+  // Keyword filter
+  if (selectedKeywords.value && selectedKeywords.value.length > 0) {
+    items = filterItemsByKeywords(items, selectedKeywords.value)
   }
 
   // Rating filter
@@ -445,6 +549,7 @@ const resetFilters = () => {
   searchQuery.value = ''
   selectedTypes.value = ['movie', 'tv']
   selectedPlatforms.value = []
+  selectedKeywords.value = []
   minRating.value = 0
   sortBy.value = 'trending_rank'
   currentPage.value = 1
@@ -463,6 +568,23 @@ const addToWishlist = (item: TrendingItem) => {
   console.log('Adding to wishlist:', item.title)
 }
 
+const openKeywordModal = () => {
+  showKeywordModal.value = true
+}
+
+const removeKeyword = (keyword: string) => {
+  const index = selectedKeywords.value.indexOf(keyword)
+  if (index > -1) {
+    selectedKeywords.value.splice(index, 1)
+    applyFilters()
+  }
+}
+
+const onKeywordsUpdated = (keywords: string[]) => {
+  selectedKeywords.value = keywords
+  applyFilters()
+}
+
 const closeVideoModal = () => {
   isVideoModalOpen.value = false
   currentVideoUrl.value = ''
@@ -479,7 +601,7 @@ onMounted(() => {
 })
 
 // Watch for page changes to reset pagination
-watch(() => [selectedTypes.value, selectedPlatforms.value, minRating.value, sortBy.value], () => {
+watch(() => [selectedTypes.value, selectedPlatforms.value, selectedKeywords.value, minRating.value, sortBy.value], () => {
   currentPage.value = 1
 })
 </script>
