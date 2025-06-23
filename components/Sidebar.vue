@@ -1,5 +1,15 @@
 <template>
   <aside class="w-64 bg-white rounded-2xl p-6 h-fit sticky top-6">
+    <!-- Mobile Close Button -->
+    <div class="lg:hidden flex justify-end mb-4">
+      <button
+        @click="$emit('close-mobile')"
+        class="p-2 text-gray-400 hover:text-gray-600 transition-colors"
+      >
+        <Icon name="mdi:close" class="w-6 h-6" />
+      </button>
+    </div>
+
     <!-- Logo -->
     <div class="flex items-center gap-2 mb-8">
       <div class="w-8 h-8 bg-purple-600 rounded-lg flex items-center justify-center">
@@ -57,6 +67,11 @@
 const route = useRoute()
 const { logout: authLogout, user } = useAuth()
 
+// Define emits
+defineEmits<{
+  'close-mobile': []
+}>()
+
 interface NavigationItem {
   name: string
   path: string
@@ -66,6 +81,7 @@ interface NavigationItem {
 
 const navigationItems: NavigationItem[] = [
   { name: 'Trending Now', path: '/', icon: 'mdi:fire' },
+  { name: 'Search & Filter', path: '/search', icon: 'mdi:magnify' },
   { name: 'Top Picks', path: '/top-picks', icon: 'mdi:trophy' },
   { name: 'Wishlist', path: '/wishlist', icon: 'mdi:playlist-plus' },
   { name: 'Coming Soon', path: '/coming-soon', icon: 'mdi:calendar-clock' },
