@@ -390,7 +390,7 @@ const minRating = ref(0)
 const sortBy = ref('trending_rank')
 const viewMode = ref<'grid' | 'list'>('grid')
 const currentPage = ref(1)
-const itemsPerPage = 20
+const itemsPerPage = 8
 
 // Keyword state
 const extractedKeywords = ref<ExtractedKeyword[]>([])
