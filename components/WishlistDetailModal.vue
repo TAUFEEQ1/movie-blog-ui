@@ -238,20 +238,28 @@ const closeModal = () => {
 }
 
 const fetchTrailerData = async () => {
-  if (!props.item.tmdb_id) return
+  console.log('fetchTrailerData called with:', { tmdb_id: props.item.tmdb_id, type: props.item.type })
+  if (!props.item.tmdb_id) {
+    console.log('No TMDB ID found, skipping trailer fetch')
+    return
+  }
   
   trailerLoading.value = true
   try {
+    console.log('Calling fetchTrailer...')
     // Fetch trailer directly from TMDB API using media composable
     const trailerResponse = await fetchTrailer(props.item.tmdb_id, props.item.type)
+    console.log('Trailer response:', trailerResponse)
     
     if (trailerResponse && trailerResponse.trailerUrl) {
       trailerData.value = {
         trailerUrl: trailerResponse.trailerUrl,
         embedUrl: trailerResponse.embedUrl
       }
+      console.log('Trailer data set:', trailerData.value)
     } else {
       trailerData.value = null
+      console.log('No trailer found in response')
     }
   } catch (error) {
     console.error('Error fetching trailer:', error)
@@ -337,16 +345,29 @@ const handleKeyDown = (event: KeyboardEvent) => {
 
 // Add/remove event listeners and load trailer data
 watch(() => props.show, (newValue) => {
+  console.log('Modal show changed:', newValue)
   if (newValue) {
+    console.log('Modal opening, item:', props.item)
     document.addEventListener('keydown', handleKeyDown)
     document.body.style.overflow = 'hidden'
     // Load trailer data when modal opens
     fetchTrailerData()
   } else {
+    console.log('Modal closing')
     document.removeEventListener('keydown', handleKeyDown)
     document.body.style.overflow = ''
     // Reset trailer data when modal closes
     trailerData.value = null
+  }
+}, { immediate: true })
+
+// Debug: Check if component is mounting
+onMounted(() => {
+  console.log('WishlistDetailModal mounted with props:', { show: props.show, item: props.item })
+  // If the modal is already showing when mounted, fetch trailer
+  if (props.show) {
+    console.log('Modal is already showing on mount, fetching trailer...')
+    fetchTrailerData()
   }
 })
 
