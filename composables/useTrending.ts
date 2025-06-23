@@ -206,7 +206,7 @@ export const useTrending = () => {
   }
 
   // Get all trending items (with pagination)
-  const getAllTrending = async (filters: TrendingFilters & { page?: number, pageSize?: number } = {}): Promise<{
+  const getAllTrending = async (filters: TrendingFilters & { page?: number, pageSize?: number, forceApi?: boolean } = {}): Promise<{
     data: TrendingItem[]
     meta: {
       pagination: {
@@ -218,41 +218,7 @@ export const useTrending = () => {
     }
   }> => {
     try {
-      // If user is not authenticated, return mock data
-      if (!user.value || !token.value) {
-        console.log('User not authenticated, using mock data for all trending')
-        
-        // Filter mock data based on filters
-        let filteredData = [...mockTrendingData]
-        
-        if (filters.type) {
-          filteredData = filteredData.filter(item => item.type === filters.type)
-        }
-        
-        if (filters.platform) {
-          filteredData = filteredData.filter(item => item.platform === filters.platform)
-        }
-        
-        // Apply pagination to mock data
-        const page = filters.page || 1
-        const pageSize = filters.pageSize || filters.limit || 20
-        const startIndex = (page - 1) * pageSize
-        const endIndex = startIndex + pageSize
-        const paginatedData = filteredData.slice(startIndex, endIndex)
-        
-        return {
-          data: paginatedData,
-          meta: {
-            pagination: {
-              page,
-              pageSize,
-              pageCount: Math.ceil(filteredData.length / pageSize),
-              total: filteredData.length
-            }
-          }
-        }
-      }
-
+      // Try to fetch from API first (public endpoint), fallback to mock data if it fails
       const params = new URLSearchParams()
       
       if (filters.type) params.append('filters[type][$eq]', filters.type)
@@ -268,21 +234,62 @@ export const useTrending = () => {
       const queryString = params.toString()
       const endpoint = `/trendings${queryString ? `?${queryString}` : ''}`
       
-      const response = await apiCall(endpoint) as {
-        data: TrendingItem[]
+      // Try public API call first
+      try {
+        const response = await apiCall(endpoint) as {
+          data: TrendingItem[]
+          meta: {
+            pagination: {
+              page: number
+              pageSize: number
+              pageCount: number
+              total: number
+            }
+          }
+        }
+        
+        if (response && response.data && response.data.length > 0) {
+          console.log('Successfully fetched trending data from API')
+          return response
+        }
+      } catch (apiError) {
+        console.warn('API call failed, falling back to mock data:', apiError)
+      }
+      
+      // Fallback to mock data if API fails or user is not authenticated
+      console.log('Using mock data for all trending')
+      
+      // Filter mock data based on filters
+      let filteredData = [...mockTrendingData]
+      
+      if (filters.type) {
+        filteredData = filteredData.filter(item => item.type === filters.type)
+      }
+      
+      if (filters.platform) {
+        filteredData = filteredData.filter(item => item.platform === filters.platform)
+      }
+      
+      // Apply pagination to mock data
+      const page = filters.page || 1
+      const pageSize = filters.pageSize || filters.limit || 20
+      const startIndex = (page - 1) * pageSize
+      const endIndex = startIndex + pageSize
+      const paginatedData = filteredData.slice(startIndex, endIndex)
+      
+      return {
+        data: paginatedData,
         meta: {
           pagination: {
-            page: number
-            pageSize: number
-            pageCount: number
-            total: number
+            page,
+            pageSize,
+            pageCount: Math.ceil(filteredData.length / pageSize),
+            total: filteredData.length
           }
         }
       }
-      
-      return response
     } catch (error) {
-      console.error('Error fetching all trending items, using mock data:', error)
+      console.error('Error in getAllTrending, using mock data:', error)
       
       // Filter mock data based on filters
       let filteredData = [...mockTrendingData]

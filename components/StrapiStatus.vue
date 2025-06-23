@@ -1,178 +1,84 @@
 <template>
-  <div class="bg-white rounded-2xl p-6">
-    <h3 class="text-xl font-bold text-gray-900 mb-6">Recent Activity</h3>
-    
-    <div class="space-y-4">
-      <div 
-        v-for="activity in recentActivity" 
-        :key="activity.id"
-        class="flex items-center gap-3"
-      >
-        <!-- Activity Icon -->
-        <div class="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0" :class="getActivityIconBg(activity.action)">
-          <Icon :name="getActivityIcon(activity.action)" class="w-5 h-5 text-white" />
-        </div>
-        
-        <!-- Activity Info -->
-        <div class="flex-1 min-w-0">
-          <p class="text-sm text-gray-900">
-            <span class="text-gray-600">{{ getActivityDescription(activity.action) }} </span>
-            <span class="font-medium text-blue-600">{{ activity.content.title }}</span>
-          </p>
-          <p class="text-xs text-gray-500">{{ formatTimeAgo(activity.timestamp) }}</p>
-        </div>
-
-        <!-- Status Indicator -->
-        <div 
-          class="w-2 h-2 rounded-full flex-shrink-0"
-          :class="getStatusColor(activity.action)"
-        ></div>
+  <div v-if="shouldShowStatus" class="bg-white/5 backdrop-blur-sm rounded-xl p-4 border border-white/10">
+    <div class="flex items-center gap-3">
+      <!-- Status Icon -->
+      <div class="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0" :class="statusIconBg">
+        <Icon :name="statusIcon" class="w-4 h-4 text-white" />
       </div>
-    </div>
-
-    <!-- Empty State -->
-    <div 
-      v-if="recentActivity.length === 0"
-      class="text-center py-8"
-    >
-      <Icon name="mdi:clock-outline" class="w-12 h-12 text-gray-300 mx-auto mb-3" />
-      <p class="text-gray-500">No recent activity</p>
+      
+      <!-- Status Info -->
+      <div class="flex-1 min-w-0">
+        <p class="text-sm font-medium text-white">{{ statusMessage }}</p>
+        <p v-if="statusSubMessage" class="text-xs text-gray-300">{{ statusSubMessage }}</p>
+      </div>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-interface Content {
-  id: number
-  title: string
-  type: 'movie' | 'series'
-}
+const config = useRuntimeConfig()
 
-interface Activity {
-  id: number
-  action: string
-  content: Content
-  timestamp: Date
-}
+// Strapi connection state
+const isConnected = ref(false)
+const isLoading = ref(true)
+const connectionError = ref('')
 
-const recentActivity = ref<Activity[]>([
-  {
-    id: 1,
-    action: "watched",
-    content: {
-      id: 1,
-      title: "Stranger Things",
-      type: "series"
-    },
-    timestamp: new Date(Date.now() - 1000 * 60 * 5) // 5 minutes ago
-  },
-  {
-    id: 2,
-    action: "added_to_wishlist",
-    content: {
-      id: 2,
-      title: "You",
-      type: "series"
-    },
-    timestamp: new Date(Date.now() - 1000 * 60 * 15) // 15 minutes ago
-  },
-  {
-    id: 3,
-    action: "planned_to_watch",
-    content: {
-      id: 3,
-      title: "The Witcher",
-      type: "series"
-    },
-    timestamp: new Date(Date.now() - 1000 * 60 * 30) // 30 minutes ago
-  },
-  {
-    id: 4,
-    action: "rated",
-    content: {
-      id: 4,
-      title: "Dune",
-      type: "movie"
-    },
-    timestamp: new Date(Date.now() - 1000 * 60 * 45) // 45 minutes ago
-  }
-])
-
-const formatTimeAgo = (timestamp: Date) => {
-  const now = new Date()
-  const diffInSeconds = Math.floor((now.getTime() - timestamp.getTime()) / 1000)
-  
-  if (diffInSeconds < 60) {
-    return 'Just now'
-  } else if (diffInSeconds < 3600) {
-    const minutes = Math.floor(diffInSeconds / 60)
-    return `${minutes}m ago`
-  } else if (diffInSeconds < 86400) {
-    const hours = Math.floor(diffInSeconds / 3600)
-    return `${hours}h ago`
-  } else {
-    const days = Math.floor(diffInSeconds / 86400)
-    return `${days}d ago`
+// Check Strapi connection
+const checkStrapiConnection = async () => {
+  try {
+    isLoading.value = true
+    const strapiUrl = config.public.strapiUrl || 'http://localhost:1337'
+    
+    // Try to fetch trending data to test connection
+    const response = await $fetch(`${strapiUrl}/api/trendings?pagination[pageSize]=1`) as any
+    
+    if (response && response.data) {
+      isConnected.value = true
+      connectionError.value = ''
+    } else {
+      isConnected.value = false
+      connectionError.value = 'Invalid response from server'
+    }
+  } catch (error: any) {
+    isConnected.value = false
+    connectionError.value = error.message || 'Unable to connect to backend'
+  } finally {
+    isLoading.value = false
   }
 }
 
-const getActivityDescription = (action: string) => {
-  switch (action) {
-    case 'watched':
-      return 'Finished watching'
-    case 'added_to_wishlist':
-      return 'Added to wishlist'
-    case 'planned_to_watch':
-      return 'Added to watchlist'
-    case 'rated':
-      return 'Rated'
-    default:
-      return action
-  }
-}
+// Computed properties for status display
+const shouldShowStatus = computed(() => {
+  // Only show if there's an error or if loading
+  return isLoading.value || !isConnected.value
+})
 
-const getActivityIcon = (action: string) => {
-  switch (action) {
-    case 'watched':
-      return 'mdi:check-circle'
-    case 'added_to_wishlist':
-      return 'mdi:heart-plus'
-    case 'planned_to_watch':
-      return 'mdi:bookmark-plus'
-    case 'rated':
-      return 'mdi:star'
-    default:
-      return 'mdi:circle'
-  }
-}
+const statusIcon = computed(() => {
+  if (isLoading.value) return 'mdi:loading'
+  if (isConnected.value) return 'mdi:check-circle'
+  return 'mdi:alert-circle'
+})
 
-const getActivityIconBg = (action: string) => {
-  switch (action) {
-    case 'watched':
-      return 'bg-green-500'
-    case 'added_to_wishlist':
-      return 'bg-pink-500'
-    case 'planned_to_watch':
-      return 'bg-yellow-500'
-    case 'rated':
-      return 'bg-purple-500'
-    default:
-      return 'bg-gray-400'
-  }
-}
+const statusIconBg = computed(() => {
+  if (isLoading.value) return 'bg-blue-500/80'
+  if (isConnected.value) return 'bg-green-500/80'
+  return 'bg-red-500/80'
+})
 
-const getStatusColor = (action: string) => {
-  switch (action) {
-    case 'watched':
-      return 'bg-green-500'
-    case 'added_to_wishlist':
-      return 'bg-pink-500'
-    case 'planned_to_watch':
-      return 'bg-yellow-500'
-    case 'rated':
-      return 'bg-purple-500'
-    default:
-      return 'bg-gray-400'
-  }
-}
+const statusMessage = computed(() => {
+  if (isLoading.value) return 'Connecting to backend...'
+  if (isConnected.value) return 'Backend connected'
+  return 'Backend connection failed'
+})
+
+const statusSubMessage = computed(() => {
+  if (isLoading.value) return ''
+  if (isConnected.value) return ''
+  return connectionError.value || 'Please check if the backend server is running'
+})
+
+// Check connection on mount
+onMounted(() => {
+  checkStrapiConnection()
+})
 </script>
