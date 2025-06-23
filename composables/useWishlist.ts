@@ -11,7 +11,7 @@ export interface WishlistItem {
   genres?: string[]
   notes?: string
   priority: 'low' | 'medium' | 'high'
-  status: 'want_to_watch' | 'watching' | 'completed' | 'on_hold' | 'dropped'
+  wish_status: 'want_to_watch' | 'watching' | 'completed' | 'on_hold' | 'dropped'
   date_added: string
   watched_date?: string
   is_active: boolean
@@ -41,7 +41,7 @@ export interface AddToWishlistData {
   genres?: string[]
   notes?: string
   priority?: 'low' | 'medium' | 'high'
-  status?: 'want_to_watch' | 'watching' | 'completed' | 'on_hold' | 'dropped'
+  wish_status?: 'want_to_watch' | 'watching' | 'completed' | 'on_hold' | 'dropped'
   tags?: number[]
 }
 
@@ -258,7 +258,7 @@ export const useWishlist = () => {
 
     wishlistItems.value.forEach(item => {
       // Status counts
-      stats[item.status.replace('_', '') as keyof typeof stats]++
+      stats[item.wish_status.replace('_', '') as keyof typeof stats]++
       
       // Type counts
       if (item.type === 'movie') stats.movies++
@@ -273,7 +273,7 @@ export const useWishlist = () => {
 
   // Filter wishlist items
   const filterWishlistItems = (filters: {
-    status?: string
+    wish_status?: string
     type?: string
     priority?: string
     tags?: number[]
@@ -281,8 +281,8 @@ export const useWishlist = () => {
   }) => {
     let filtered = [...wishlistItems.value]
 
-    if (filters.status) {
-      filtered = filtered.filter(item => item.status === filters.status)
+    if (filters.wish_status) {
+      filtered = filtered.filter(item => item.wish_status === filters.wish_status)
     }
 
     if (filters.type) {

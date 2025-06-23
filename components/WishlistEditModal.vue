@@ -68,7 +68,7 @@
                     Status
                   </label>
                   <select
-                    v-model="form.status"
+                    v-model="form.wish_status"
                     class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                   >
                     <option value="want_to_watch">Want to Watch</option>
@@ -80,7 +80,7 @@
                 </div>
 
                 <!-- Watched Date (only show if completed) -->
-                <div v-if="form.status === 'completed'">
+                <div v-if="form.wish_status === 'completed'">
                   <label class="block text-sm font-medium text-gray-700 mb-2">
                     Date Completed
                   </label>
@@ -226,7 +226,7 @@ const { updateWishlistItem, createTag, searchTags, userTags, fetchTags } = useWi
 // Form state
 const form = reactive({
   priority: props.item.priority,
-  status: props.item.status,
+  wish_status: props.item.wish_status,
   notes: props.item.notes || '',
   watched_date: props.item.watched_date || ''
 })
@@ -319,7 +319,7 @@ const handleSubmit = async () => {
 
     const updates = {
       priority: form.priority,
-      status: form.status,
+      wish_status: form.wish_status,
       notes: form.notes.trim() || undefined,
       watched_date: form.watched_date || undefined,
       tags: selectedTags.value.map(tag => tag.id)
@@ -345,7 +345,7 @@ watch(() => props.isOpen, async (isOpen) => {
 // Reset form when item changes
 watch(() => props.item, (newItem) => {
   form.priority = newItem.priority
-  form.status = newItem.status
+  form.wish_status = newItem.wish_status
   form.notes = newItem.notes || ''
   form.watched_date = newItem.watched_date || ''
   selectedTags.value = [...(newItem.tags || [])]

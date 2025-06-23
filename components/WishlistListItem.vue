@@ -35,9 +35,16 @@
           <!-- Actions -->
           <div class="flex items-center gap-2">
             <button
-              @click="$emit('update', item, { status: getNextStatus(item.status) })"
+              @click="$emit('view', item)"
               class="p-2 text-gray-600 hover:text-blue-600 transition-colors"
-              :title="`Mark as ${getStatusLabel(getNextStatus(item.status))}`"
+              title="View Details"
+            >
+              <Icon name="mdi:eye" class="w-5 h-5" />
+            </button>
+            <button
+              @click="$emit('update', item, { wish_status: getNextStatus(item.wish_status) })"
+              class="p-2 text-gray-600 hover:text-blue-600 transition-colors"
+              :title="`Mark as ${getStatusLabel(getNextStatus(item.wish_status))}`"
             >
               <Icon name="mdi:check" class="w-5 h-5" />
             </button>
@@ -62,9 +69,9 @@
         <div class="flex items-center gap-2 mb-2">
           <span
             class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium text-white"
-            :class="getStatusColor(item.status)"
+            :class="getStatusColor(item.wish_status)"
           >
-            {{ getStatusLabel(item.status) }}
+            {{ getStatusLabel(item.wish_status) }}
           </span>
           <span
             class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium text-white"
@@ -115,6 +122,7 @@ interface Props {
 interface Emits {
   (e: 'remove', item: WishlistItem): void
   (e: 'update', item: WishlistItem, updates: any): void
+  (e: 'view', item: WishlistItem): void
 }
 
 const props = defineProps<Props>()

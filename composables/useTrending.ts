@@ -373,11 +373,24 @@ export const useTrending = () => {
     return trendingItems.map(transformTrendingToMovie)
   }
 
+  // Find trending item by TMDB ID (for getting trailer URL)
+  const findTrendingByTmdbId = async (tmdbId: number): Promise<TrendingItem | null> => {
+    try {
+      const allTrending = await getAllTrending()
+      const found = allTrending.data.find(item => item.tmdb_id === tmdbId)
+      return found || null
+    } catch (error) {
+      console.error('Error finding trending item by TMDB ID:', error)
+      return null
+    }
+  }
+
   return {
     getTrendingByPlatform,
     getAllTrending,
     getTrendingMovies,
     getTrendingByPlatformForUI,
+    findTrendingByTmdbId,
     transformTrendingToMovie,
     truncateTitle
   }

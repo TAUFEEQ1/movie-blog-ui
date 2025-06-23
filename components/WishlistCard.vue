@@ -26,18 +26,25 @@
       <!-- Status Badge -->
       <div
         class="absolute top-2 right-2 px-2 py-1 rounded-full text-xs font-medium text-white"
-        :class="getStatusColor(item.status)"
+        :class="getStatusColor(item.wish_status)"
       >
-        {{ getStatusLabel(item.status) }}
+        {{ getStatusLabel(item.wish_status) }}
       </div>
 
       <!-- Overlay Actions -->
       <div class="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-60 transition-all duration-300 flex items-center justify-center opacity-0 group-hover:opacity-100">
         <div class="flex gap-2">
           <button
-            @click="$emit('update', item, { status: getNextStatus(item.status) })"
+            @click="$emit('view', item)"
             class="p-2 bg-white bg-opacity-20 rounded-full hover:bg-opacity-30 transition-colors"
-            :title="`Mark as ${getStatusLabel(getNextStatus(item.status))}`"
+            title="View Details"
+          >
+            <Icon name="mdi:eye" class="w-5 h-5 text-white" />
+          </button>
+          <button
+            @click="$emit('update', item, { wish_status: getNextStatus(item.wish_status) })"
+            class="p-2 bg-white bg-opacity-20 rounded-full hover:bg-opacity-30 transition-colors"
+            :title="`Mark as ${getStatusLabel(getNextStatus(item.wish_status))}`"
           >
             <Icon name="mdi:check" class="w-5 h-5 text-white" />
           </button>
@@ -125,6 +132,7 @@ interface Props {
 interface Emits {
   (e: 'remove', item: WishlistItem): void
   (e: 'update', item: WishlistItem, updates: any): void
+  (e: 'view', item: WishlistItem): void
 }
 
 const props = defineProps<Props>()

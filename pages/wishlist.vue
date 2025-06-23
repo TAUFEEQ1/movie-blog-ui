@@ -116,7 +116,7 @@
               <div>
                 <label class="block text-sm font-medium text-gray-700 mb-2">Status</label>
                 <select
-                  v-model="filters.status"
+                  v-model="filters.wish_status"
                   class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                 >
                   <option value="">All Statuses</option>
@@ -178,7 +178,6 @@
                     :style="{ backgroundColor: tag.color }"
                   ></div>
                   {{ tag.name }}
-                  <span class="text-xs opacity-75">({{ tag.usage_count }})</span>
                 </button>
               </div>
               <button
@@ -234,6 +233,7 @@
               :item="item"
               @remove="removeItem"
               @update="updateItem"
+              @view="openDetailModal"
             />
           </div>
 
@@ -245,20 +245,31 @@
               :item="item"
               @remove="removeItem"
               @update="updateItem"
+              @view="openDetailModal"
             />
           </div>
         </div>
       </div>
     </div>
+
+    <!-- Detail Modal -->
+    <WishlistDetailModal
+      v-if="selectedItem"
+      :show="showDetailModal"
+      :item="selectedItem"
+      @close="closeDetailModal"
+      @edit="openEditModal"
+      @remove="removeItem"
+    />
   </div>
 </template>
 
 <script setup lang="ts">
 import type { WishlistItem } from '~/composables/useWishlist'
 
-definePageMeta({
-  middleware: 'auth'
-})
+// definePageMeta({
+//   middleware: 'auth'
+// })
 
 const { 
   wishlistItems, 
@@ -275,10 +286,12 @@ const {
 // State
 const showMobileMenu = ref(false)
 const viewMode = ref<'grid' | 'list'>('grid')
+const showDetailModal = ref(false)
+const selectedItem = ref<WishlistItem | null>(null)
 
 const filters = reactive({
   search: '',
-  status: '',
+  wish_status: '',
   type: '',
   priority: '',
   tags: [] as number[]
@@ -289,7 +302,7 @@ const stats = computed(() => getWishlistStats.value)
 
 const filteredItems = computed(() => {
   return filterWishlistItems({
-    status: filters.status || undefined,
+    wish_status: filters.wish_status || undefined,
     type: filters.type || undefined,
     priority: filters.priority || undefined,
     tags: filters.tags.length > 0 ? filters.tags : undefined,
@@ -321,6 +334,23 @@ const updateItem = async (item: WishlistItem, updates: any) => {
   } catch (error) {
     console.error('Error updating item:', error)
   }
+}
+
+const openDetailModal = (item: WishlistItem) => {
+  selectedItem.value = item
+  showDetailModal.value = true
+}
+
+const closeDetailModal = () => {
+  showDetailModal.value = false
+  selectedItem.value = null
+}
+
+const openEditModal = (item: WishlistItem) => {
+  // Close detail modal and open edit modal
+  closeDetailModal()
+  // You could emit an event or use a global state to open the edit modal
+  // For now, we'll just close the detail modal
 }
 
 // Load data on mount
