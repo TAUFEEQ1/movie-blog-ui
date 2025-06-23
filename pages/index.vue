@@ -240,7 +240,7 @@
                 </div>
               </div>
               
-              <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
+              <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-4 gap-6">
                 <TrendingCard 
                   v-for="item in paginatedItems" 
                   :key="`${item.tmdb_id}-${item.type}`"
