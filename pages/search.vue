@@ -38,20 +38,44 @@
           <p class="text-gray-600">Search and filter through the latest trending movies and TV shows</p>
         </div>
 
-        <div class="flex gap-6">
+        <!-- Mobile Filters Toggle -->
+        <div class="lg:hidden mb-4">
+          <button
+            @click="showMobileFilters = !showMobileFilters"
+            class="w-full flex items-center justify-between bg-white rounded-2xl p-4 shadow-sm border border-gray-200"
+          >
+            <div class="flex items-center gap-3">
+              <Icon name="mdi:filter-variant" class="w-5 h-5 text-blue-600" />
+              <span class="font-medium text-gray-900">Filters</span>
+              <span v-if="activeFiltersCount > 0" class="bg-blue-100 text-blue-700 px-2 py-1 rounded-full text-xs">
+                {{ activeFiltersCount }}
+              </span>
+            </div>
+            <Icon 
+              :name="showMobileFilters ? 'mdi:chevron-up' : 'mdi:chevron-down'" 
+              class="w-5 h-5 text-gray-400" 
+            />
+          </button>
+        </div>
+
+        <div class="flex flex-col lg:flex-row gap-6">
           <!-- Filters Sidebar -->
-          <div class="w-80 bg-white rounded-2xl p-6 shadow-sm border border-gray-200 h-fit">
-            <h2 class="text-lg font-semibold text-gray-900 mb-4">Filters</h2>
+          <div :class="[
+            'bg-white rounded-2xl p-4 lg:p-6 shadow-sm border border-gray-200 h-fit transition-all duration-300',
+            'lg:w-80',
+            showMobileFilters ? 'block' : 'hidden lg:block'
+          ]">
+            <h2 class="text-lg font-semibold text-gray-900 mb-4 hidden lg:block">Filters</h2>
             
             <!-- Search Input -->
-            <div class="mb-6">
+            <div class="mb-4 lg:mb-6">
               <label class="block text-sm font-medium text-gray-700 mb-2">Search</label>
               <div class="relative">
                 <input
                   v-model="searchQuery"
                   type="text"
                   placeholder="Search trending content..."
-                  class="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                  class="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors text-base"
                   @input="async () => await applyFilters()"
                 />
                 <Icon name="mdi:magnify" class="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
@@ -59,15 +83,15 @@
             </div>
 
             <!-- Content Type Filter -->
-            <div class="mb-6">
+            <div class="mb-4 lg:mb-6">
               <label class="block text-sm font-medium text-gray-700 mb-3">Content Type</label>
-              <div class="space-y-2">
+              <div class="space-y-3">
                 <label class="flex items-center">
                   <input
                     v-model="selectedTypes"
                     type="checkbox"
                     value="movie"
-                    class="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                    class="rounded border-gray-300 text-blue-600 focus:ring-blue-500 w-4 h-4"
                     @change="async () => await applyFilters()"
                   />
                   <span class="ml-3 text-sm text-gray-700">Movies</span>
@@ -77,7 +101,7 @@
                     v-model="selectedTypes"
                     type="checkbox"
                     value="tv"
-                    class="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                    class="rounded border-gray-300 text-blue-600 focus:ring-blue-500 w-4 h-4"
                     @change="async () => await applyFilters()"
                   />
                   <span class="ml-3 text-sm text-gray-700">TV Shows</span>
@@ -86,34 +110,34 @@
             </div>
 
             <!-- Platform Filter -->
-            <div class="mb-6">
+            <div class="mb-4 lg:mb-6">
               <label class="block text-sm font-medium text-gray-700 mb-3">Platforms</label>
-              <div class="grid grid-cols-2 gap-3">
+              <div class="grid grid-cols-2 lg:grid-cols-2 gap-2 lg:gap-3">
                 <button
                   v-for="platform in platforms"
                   :key="platform.name"
                   @click="togglePlatform(platform.name)"
                   :class="[
-                    'flex flex-col items-center p-4 rounded-lg border-2 transition-all duration-200 hover:scale-105',
+                    'flex flex-col items-center p-3 lg:p-4 rounded-lg border-2 transition-all duration-200 hover:scale-105 min-h-[80px] lg:min-h-[auto]',
                     selectedPlatforms.includes(platform.name)
                       ? 'border-blue-500 bg-blue-50 shadow-md'
                       : 'border-gray-200 bg-white hover:border-gray-300'
                   ]"
                 >
-                  <Icon :name="platform.icon" class="w-8 h-8 mb-2" :class="platform.color" />
-                  <span class="text-xs font-medium text-gray-700">{{ platform.displayName }}</span>
+                  <Icon :name="platform.icon" class="w-6 h-6 lg:w-8 lg:h-8 mb-2" :class="platform.color" />
+                  <span class="text-xs font-medium text-gray-700 text-center leading-tight">{{ platform.displayName }}</span>
                 </button>
               </div>
             </div>
 
             <!-- Keyword Filter -->
-            <div class="mb-6">
+            <div class="mb-4 lg:mb-6">
               <div class="flex items-center justify-between mb-3">
                 <label class="text-sm font-medium text-gray-700">Keywords</label>
                 <button
                   @click="openKeywordModal"
                   :disabled="keywordsLoading"
-                  class="text-xs text-blue-600 hover:text-blue-800 transition-colors disabled:opacity-50"
+                  class="text-xs text-blue-600 hover:text-blue-800 transition-colors disabled:opacity-50 px-2 py-1 rounded"
                 >
                   {{ keywordsLoading ? 'Loading...' : (selectedKeywords?.length || 0) > 0 ? 'Edit' : 'Select' }}
                 </button>
@@ -125,12 +149,12 @@
                   <span
                     v-for="keyword in displayedKeywords"
                     :key="keyword"
-                    class="inline-flex items-center gap-1 px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-xs"
+                    class="inline-flex items-center gap-1 px-3 py-2 bg-blue-100 text-blue-800 rounded-full text-xs"
                   >
                     {{ keyword }}
                     <button
                       @click="removeKeyword(keyword)"
-                      class="text-blue-600 hover:text-blue-800"
+                      class="text-blue-600 hover:text-blue-800 ml-1"
                     >
                       <Icon name="mdi:close" class="w-3 h-3" />
                     </button>
@@ -138,7 +162,7 @@
                   <button
                     v-if="hasMoreKeywords"
                     @click="openKeywordModal"
-                    class="inline-flex items-center gap-1 px-3 py-1 bg-gray-100 text-gray-600 rounded-full text-xs hover:bg-gray-200 transition-colors"
+                    class="inline-flex items-center gap-1 px-3 py-2 bg-gray-100 text-gray-600 rounded-full text-xs hover:bg-gray-200 transition-colors"
                   >
                     +{{ (selectedKeywords?.length || 0) - 4 }} more
                   </button>
@@ -152,7 +176,7 @@
                 <button
                   @click="openKeywordModal"
                   :disabled="keywordsLoading"
-                  class="text-xs text-blue-600 hover:text-blue-800 transition-colors disabled:opacity-50"
+                  class="text-xs text-blue-600 hover:text-blue-800 transition-colors disabled:opacity-50 px-2 py-1 rounded"
                 >
                   {{ keywordsLoading ? 'Extracting keywords...' : 'Browse Keywords' }}
                 </button>
@@ -160,7 +184,7 @@
             </div>
 
             <!-- Rating Range -->
-            <div class="mb-6">
+            <div class="mb-4 lg:mb-6">
               <label class="block text-sm font-medium text-gray-700 mb-3">Minimum Rating</label>
               <div class="space-y-2">
                 <input
@@ -181,11 +205,11 @@
             </div>
 
             <!-- Sort Options -->
-            <div class="mb-6">
+            <div class="mb-4 lg:mb-6">
               <label class="block text-sm font-medium text-gray-700 mb-3">Sort By</label>
               <select
                 v-model="sortBy"
-                class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-base"
                 @change="async () => await applyFilters()"
               >
                 <option value="trending_rank">Trending Rank</option>
@@ -199,7 +223,7 @@
             <!-- Reset Filters -->
             <button
               @click="resetFilters"
-              class="w-full py-2 px-4 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg transition-colors flex items-center justify-center gap-2"
+              class="w-full py-3 px-4 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg transition-colors flex items-center justify-center gap-2"
             >
               <Icon name="mdi:refresh" class="w-4 h-4" />
               Reset Filters
@@ -209,14 +233,14 @@
           <!-- Results Grid -->
           <div class="flex-1">
             <!-- Results Header -->
-            <div class="bg-white rounded-2xl p-4 mb-6 shadow-sm border border-gray-200">
-              <div class="flex items-center justify-between">
-                <div class="flex items-center gap-3">
+            <div class="bg-white rounded-2xl p-3 lg:p-4 mb-4 lg:mb-6 shadow-sm border border-gray-200">
+              <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+                <div class="flex flex-wrap items-center gap-2 lg:gap-3">
                   <span class="text-sm text-gray-600">
                     {{ filteredItems?.length || 0 }} {{ (filteredItems?.length || 0) === 1 ? 'result' : 'results' }} found
                   </span>
                   <div v-if="activeFiltersCount > 0" class="flex items-center gap-2">
-                    <span class="text-xs text-gray-500">•</span>
+                    <span class="text-xs text-gray-500 hidden sm:inline">•</span>
                     <span class="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded-full">
                       {{ activeFiltersCount }} filter{{ activeFiltersCount === 1 ? '' : 's' }} active
                     </span>
@@ -269,7 +293,7 @@
             <!-- Results Grid -->
             <div v-else>
               <!-- Grid View -->
-              <div v-if="viewMode === 'grid'" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-4 gap-6">
+              <div v-if="viewMode === 'grid'" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 lg:gap-6">
                 <TrendingCard
                   v-for="item in paginatedItems"
                   :key="`trending-${item.tmdb_id}`"
@@ -280,62 +304,63 @@
               </div>
 
               <!-- List View -->
-              <div v-else class="space-y-4">
+              <div v-else class="space-y-3 lg:space-y-4">
                 <div
                   v-for="item in paginatedItems"
                   :key="`trending-list-${item.tmdb_id}`"
-                  class="bg-white rounded-xl p-4 shadow-sm border border-gray-200 hover:shadow-md transition-shadow"
+                  class="bg-white rounded-xl p-3 lg:p-4 shadow-sm border border-gray-200 hover:shadow-md transition-shadow"
                 >
-                  <div class="flex items-center gap-4">
+                  <div class="flex items-center gap-3 lg:gap-4">
                     <img
                       :src="`https://image.tmdb.org/t/p/w154${item.poster_path}`"
                       :alt="item.title"
-                      class="w-16 h-24 object-cover rounded-lg"
+                      class="w-12 h-18 lg:w-16 lg:h-24 object-cover rounded-lg flex-shrink-0"
                       @error="handleImageError"
                     />
-                    <div class="flex-1">
-                      <h3 class="font-semibold text-gray-900 mb-1">{{ item.title }}</h3>
-                      <div class="flex items-center gap-4 text-sm text-gray-600 mb-2">
+                    <div class="flex-1 min-w-0">
+                      <h3 class="font-semibold text-gray-900 mb-1 text-sm lg:text-base truncate">{{ item.title }}</h3>
+                      <div class="flex flex-wrap items-center gap-2 lg:gap-4 text-xs lg:text-sm text-gray-600 mb-2">
                         <span class="capitalize">{{ item.type === 'tv' ? 'TV Show' : 'Movie' }}</span>
                         <span>{{ item.release_year }}</span>
                         <span class="px-2 py-1 bg-gray-100 rounded text-xs">{{ item.platform }}</span>
                       </div>
                       <div class="flex items-center gap-2">
-                        <Icon name="mdi:star" class="w-4 h-4 text-yellow-500" />
-                        <span class="text-sm font-medium">{{ item.tmdb_rating?.toFixed(1) || 'N/A' }}</span>
+                        <Icon name="mdi:star" class="w-3 h-3 lg:w-4 lg:h-4 text-yellow-500" />
+                        <span class="text-xs lg:text-sm font-medium">{{ item.tmdb_rating?.toFixed(1) || 'N/A' }}</span>
                       </div>
                     </div>
                     <button
                       v-if="item.trailer_url"
                       @click="playTrailer(item.trailer_url)"
-                      class="p-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
+                      class="p-2 lg:p-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors flex-shrink-0"
                     >
-                      <Icon name="mdi:play" class="w-5 h-5" />
+                      <Icon name="mdi:play" class="w-4 h-4 lg:w-5 lg:h-5" />
                     </button>
                   </div>
                 </div>
               </div>
 
               <!-- Pagination -->
-              <div v-if="totalPages > 1" class="flex items-center justify-center gap-2 mt-8">
+              <div v-if="totalPages > 1" class="flex items-center justify-center gap-2 mt-6 lg:mt-8">
                 <button
                   @click="currentPage = Math.max(1, currentPage - 1)"
                   :disabled="currentPage === 1"
-                  class="p-2 rounded-lg bg-white border border-gray-300 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50"
+                  class="p-2 lg:p-3 rounded-lg bg-white border border-gray-300 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 min-w-[44px] flex items-center justify-center"
                 >
-                  <Icon name="mdi:chevron-left" class="w-5 h-5" />
+                  <Icon name="mdi:chevron-left" class="w-4 h-4 lg:w-5 lg:h-5" />
                 </button>
                 
-                <span class="px-4 py-2 text-sm text-gray-600">
-                  Page {{ currentPage }} of {{ totalPages }}
+                <span class="px-3 lg:px-4 py-2 text-sm text-gray-600 text-center">
+                  <span class="hidden sm:inline">Page </span>{{ currentPage }}<span class="hidden sm:inline"> of {{ totalPages }}</span>
+                  <span class="sm:hidden">/{{ totalPages }}</span>
                 </span>
                 
                 <button
                   @click="currentPage = Math.min(totalPages, currentPage + 1)"
                   :disabled="currentPage === totalPages"
-                  class="p-2 rounded-lg bg-white border border-gray-300 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50"
+                  class="p-2 lg:p-3 rounded-lg bg-white border border-gray-300 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 min-w-[44px] flex items-center justify-center"
                 >
-                  <Icon name="mdi:chevron-right" class="w-5 h-5" />
+                  <Icon name="mdi:chevron-right" class="w-4 h-4 lg:w-5 lg:h-5" />
                 </button>
               </div>
             </div>
@@ -378,6 +403,7 @@ const { extractKeywordsFromItems, filterItemsByKeywords } = useKeywordExtraction
 
 // State
 const showMobileMenu = ref(false)
+const showMobileFilters = ref(false)
 const loading = ref(false)
 const keywordsLoading = ref(false)
 const allItems = ref<TrendingItem[]>([])
@@ -543,6 +569,11 @@ const applyFilters = async () => {
 
   filteredItems.value = items
   currentPage.value = 1
+  
+  // Close mobile filters on mobile devices when filters are applied
+  if (window.innerWidth < 1024) {
+    showMobileFilters.value = false
+  }
 }
 
 const resetFilters = async () => {
@@ -610,8 +641,8 @@ watch(() => [selectedTypes.value, selectedPlatforms.value, selectedKeywords.valu
 /* Custom slider styling */
 .slider::-webkit-slider-thumb {
   appearance: none;
-  height: 20px;
-  width: 20px;
+  height: 24px;
+  width: 24px;
   border-radius: 50%;
   background: #3B82F6;
   cursor: pointer;
@@ -620,12 +651,37 @@ watch(() => [selectedTypes.value, selectedPlatforms.value, selectedKeywords.valu
 }
 
 .slider::-moz-range-thumb {
-  height: 20px;
-  width: 20px;
+  height: 24px;
+  width: 24px;
   border-radius: 50%;
   background: #3B82F6;
   cursor: pointer;
   border: 2px solid #ffffff;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+/* Mobile-specific optimizations */
+@media (max-width: 1023px) {
+  .slider::-webkit-slider-thumb {
+    height: 28px;
+    width: 28px;
+  }
+  
+  .slider::-moz-range-thumb {
+    height: 28px;
+    width: 28px;
+  }
+}
+
+/* Ensure proper touch targets on mobile */
+@media (max-width: 768px) {
+  button, input[type="checkbox"], input[type="range"], select {
+    min-height: 44px;
+  }
+  
+  /* Exception for small buttons that are grouped */
+  .inline-flex button {
+    min-height: auto;
+  }
 }
 </style>
