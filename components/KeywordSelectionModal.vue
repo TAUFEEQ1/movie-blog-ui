@@ -239,25 +239,46 @@ const props = withDefaults(defineProps<Props>(), {
 const emit = defineEmits<Emits>()
 
 // Composables
-const { categorizeKeywords } = useKeywordExtraction()
+const { categorizeKeywords, getAllAvailableKeywords } = useKeywordExtraction()
 
 // State
 const searchQuery = ref('')
 const viewMode = ref<'categories' | 'all' | 'popular'>('popular')
 const localSelectedKeywords = ref<string[]>([...props.selectedKeywords])
+const availableKeywords = ref<ExtractedKeyword[]>([])
+const loadingKeywords = ref(false)
+
+// Load available keywords on mount
+onMounted(async () => {
+  if (!props.keywords || props.keywords.length === 0) {
+    try {
+      loadingKeywords.value = true
+      availableKeywords.value = await getAllAvailableKeywords()
+    } catch (error) {
+      console.error('Error loading available keywords:', error)
+    } finally {
+      loadingKeywords.value = false
+    }
+  }
+})
+
+// Use available keywords from JSONL if props.keywords is empty
+const effectiveKeywords = computed(() => {
+  return props.keywords && props.keywords.length > 0 ? props.keywords : availableKeywords.value
+})
 
 // Computed
 const filteredKeywords = computed((): ExtractedKeyword[] => {
-  if (!props.keywords || !Array.isArray(props.keywords)) {
+  if (!effectiveKeywords.value || !Array.isArray(effectiveKeywords.value)) {
     return []
   }
   
   if (!searchQuery.value) {
-    return props.keywords
+    return effectiveKeywords.value
   }
   
   const query = searchQuery.value.toLowerCase()
-  return props.keywords.filter(kw => 
+  return effectiveKeywords.value.filter(kw => 
     kw.keyword.toLowerCase().includes(query)
   )
 })
@@ -270,10 +291,10 @@ const categorizedKeywords = computed<Record<string, ExtractedKeyword[]>>(() => {
 })
 
 const maxScore = computed(() => {
-  if (!props.keywords || props.keywords.length === 0) {
+  if (!effectiveKeywords.value || effectiveKeywords.value.length === 0) {
     return 1
   }
-  return Math.max(...props.keywords.map(kw => kw.score), 1)
+  return Math.max(...effectiveKeywords.value.map(kw => kw.score), 1)
 })
 
 // Methods

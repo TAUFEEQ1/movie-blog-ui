@@ -52,7 +52,7 @@
                   type="text"
                   placeholder="Search trending content..."
                   class="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
-                  @input="applyFilters"
+                  @input="async () => await applyFilters()"
                 />
                 <Icon name="mdi:magnify" class="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
               </div>
@@ -68,7 +68,7 @@
                     type="checkbox"
                     value="movie"
                     class="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                    @change="applyFilters"
+                    @change="async () => await applyFilters()"
                   />
                   <span class="ml-3 text-sm text-gray-700">Movies</span>
                 </label>
@@ -78,7 +78,7 @@
                     type="checkbox"
                     value="tv"
                     class="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                    @change="applyFilters"
+                    @change="async () => await applyFilters()"
                   />
                   <span class="ml-3 text-sm text-gray-700">TV Shows</span>
                 </label>
@@ -170,7 +170,7 @@
                   max="10"
                   step="0.5"
                   class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer slider"
-                  @input="applyFilters"
+                  @input="async () => await applyFilters()"
                 />
                 <div class="flex justify-between text-xs text-gray-500">
                   <span>0</span>
@@ -186,7 +186,7 @@
               <select
                 v-model="sortBy"
                 class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                @change="applyFilters"
+                @change="async () => await applyFilters()"
               >
                 <option value="trending_rank">Trending Rank</option>
                 <option value="rating_desc">Rating (High to Low)</option>
@@ -455,11 +455,11 @@ const fetchTrendingItems = async () => {
     
     // Extract keywords from all items (client-side only)
     if (process.client && allItems.value.length > 0) {
-      const keywordStats = extractKeywordsFromItems(allItems.value)
+      const keywordStats = await extractKeywordsFromItems(allItems.value)
       extractedKeywords.value = keywordStats.topKeywords
     }
     
-    applyFilters()
+    await applyFilters()
   } catch (error) {
     console.error('Error fetching trending items:', error)
     allItems.value = []
@@ -470,17 +470,17 @@ const fetchTrendingItems = async () => {
   }
 }
 
-const togglePlatform = (platform: string) => {
+const togglePlatform = async (platform: string) => {
   const index = selectedPlatforms.value.indexOf(platform)
   if (index > -1) {
     selectedPlatforms.value.splice(index, 1)
   } else {
     selectedPlatforms.value.push(platform)
   }
-  applyFilters()
+  await applyFilters()
 }
 
-const applyFilters = () => {
+const applyFilters = async () => {
   if (!allItems.value || !Array.isArray(allItems.value)) {
     filteredItems.value = []
     return
@@ -510,7 +510,7 @@ const applyFilters = () => {
 
   // Keyword filter
   if (selectedKeywords.value && selectedKeywords.value.length > 0) {
-    items = filterItemsByKeywords(items, selectedKeywords.value)
+    items = await filterItemsByKeywords(items, selectedKeywords.value)
   }
 
   // Rating filter
@@ -545,7 +545,7 @@ const applyFilters = () => {
   currentPage.value = 1
 }
 
-const resetFilters = () => {
+const resetFilters = async () => {
   searchQuery.value = ''
   selectedTypes.value = ['movie', 'tv']
   selectedPlatforms.value = []
@@ -553,7 +553,7 @@ const resetFilters = () => {
   minRating.value = 0
   sortBy.value = 'trending_rank'
   currentPage.value = 1
-  applyFilters()
+  await applyFilters()
 }
 
 const playTrailer = (trailerUrl: string) => {
@@ -572,17 +572,17 @@ const openKeywordModal = () => {
   showKeywordModal.value = true
 }
 
-const removeKeyword = (keyword: string) => {
+const removeKeyword = async (keyword: string) => {
   const index = selectedKeywords.value.indexOf(keyword)
   if (index > -1) {
     selectedKeywords.value.splice(index, 1)
-    applyFilters()
+    await applyFilters()
   }
 }
 
-const onKeywordsUpdated = (keywords: string[]) => {
+const onKeywordsUpdated = async (keywords: string[]) => {
   selectedKeywords.value = keywords
-  applyFilters()
+  await applyFilters()
 }
 
 const closeVideoModal = () => {
