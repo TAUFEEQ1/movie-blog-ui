@@ -377,20 +377,17 @@
     />
 
     <!-- Keyword Selection Modal -->
-    <KeywordSelectionModal
+    <BackendKeywordSelectionModal
       :show="showKeywordModal"
-      :keywords="extractedKeywords"
       :selected-keywords="selectedKeywords"
       @close="showKeywordModal = false"
-      @update:selected-keywords="onKeywordsUpdated"
-      @apply="applyFilters"
+      @apply="onKeywordsApplied"
     />
   </div>
 </template>
 
 <script setup lang="ts">
 import type { TrendingItem } from '~/composables/useTrending'
-import type { ExtractedKeyword } from '~/composables/useKeywordExtraction'
 
 // Set page metadata
 definePageMeta({
@@ -399,7 +396,7 @@ definePageMeta({
 
 // Composables
 const { getAllTrending } = useTrending()
-const { extractKeywordsFromItems, filterItemsByKeywords } = useKeywordExtraction()
+const { filterItemsByKeywords, extractKeywordsFromItems } = useBackendKeywords()
 
 // State
 const showMobileMenu = ref(false)
@@ -418,8 +415,7 @@ const viewMode = ref<'grid' | 'list'>('grid')
 const currentPage = ref(1)
 const itemsPerPage = 8
 
-// Keyword state
-const extractedKeywords = ref<ExtractedKeyword[]>([])
+// Modal state
 const showKeywordModal = ref(false)
 
 // Video modal state
@@ -479,17 +475,10 @@ const fetchTrendingItems = async () => {
     const response = await getAllTrending()
     allItems.value = response.data || []
     
-    // Extract keywords from all items (client-side only)
-    if (process.client && allItems.value.length > 0) {
-      const keywordStats = await extractKeywordsFromItems(allItems.value)
-      extractedKeywords.value = keywordStats.topKeywords
-    }
-    
     await applyFilters()
   } catch (error) {
     console.error('Error fetching trending items:', error)
     allItems.value = []
-    extractedKeywords.value = []
   } finally {
     loading.value = false
     keywordsLoading.value = false
@@ -520,7 +509,7 @@ const applyFilters = async () => {
     items = items.filter(item => 
       item.title?.toLowerCase().includes(query) ||
       item.overview?.toLowerCase().includes(query) ||
-      item.genres?.some(genre => genre.toLowerCase().includes(query))
+      item.genres?.some((genre: string) => genre.toLowerCase().includes(query))
     )
   }
 
@@ -613,6 +602,12 @@ const removeKeyword = async (keyword: string) => {
 
 const onKeywordsUpdated = async (keywords: string[]) => {
   selectedKeywords.value = keywords
+  await applyFilters()
+}
+
+const onKeywordsApplied = async (keywords: string[]) => {
+  selectedKeywords.value = keywords
+  showKeywordModal.value = false
   await applyFilters()
 }
 
