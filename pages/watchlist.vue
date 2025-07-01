@@ -34,6 +34,11 @@
           <div class="flex items-center justify-between mb-4">
             <h1 class="text-3xl font-bold text-gray-900">My Watchlist</h1>
             <div class="flex items-center gap-3">
+              <!-- Import Netflix Button -->
+              <button @click="showImportModal = true" class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition">
+                <Icon name="mdi:file-upload-outline" class="w-4 h-4 mr-2" />
+                Import Netflix Watchlist
+              </button>
               <!-- View Toggle -->
               <div class="flex bg-white rounded-lg shadow-sm p-1">
                 <button
@@ -224,11 +229,16 @@
       @edit="openEditModal"
       @remove="removeItem"
     />
+
+    <!-- Import Netflix Modal -->
+    <NetflixImportModal :show="showImportModal" @close="showImportModal = false" @imported="onNetflixImported" />
   </div>
 </template>
 
 <script setup lang="ts">
 import type { WatchlistItem } from '~/composables/useWatchlist'
+import { ref, reactive, computed, onMounted, watch } from 'vue'
+import NetflixImportModal from '~/components/NetflixImportModal.vue'
 
 // definePageMeta({
 //   middleware: 'auth'
@@ -249,6 +259,7 @@ const showMobileMenu = ref(false)
 const viewMode = ref<'grid' | 'list'>('grid')
 const showDetailModal = ref(false)
 const selectedItem = ref<WatchlistItem | null>(null)
+const showImportModal = ref(false)
 
 const filters = reactive({
   search: '',
@@ -320,4 +331,9 @@ onMounted(() => {
     viewMode.value = savedMode
   }
 })
+
+const onNetflixImported = async () => {
+  await fetchWatchlist()
+  showImportModal.value = false
+}
 </script>

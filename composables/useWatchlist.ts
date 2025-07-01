@@ -1,3 +1,5 @@
+import axios from 'axios'
+
 export interface WatchlistItem {
   id: number
   tmdb_id: number
@@ -44,6 +46,11 @@ export interface AddToWatchlistData {
   priority?: 'low' | 'medium' | 'high'
   watch_status?: 'want_to_watch' | 'watching' | 'completed' | 'on_hold' | 'dropped'
   // tags?: number[] // Shelved for now
+}
+
+export interface NetflixImportResponse {
+  imported: number;
+  items: WatchlistItem[];
 }
 
 export const useWatchlist = () => {
@@ -312,6 +319,25 @@ export const useWatchlist = () => {
     return filtered
   }
 
+  // Upload Netflix watchlist CSV file
+  const uploadNetflixWatchlist = async (file: File): Promise<NetflixImportResponse> => {
+    if (!token.value) throw new Error('Not authenticated')
+    const strapiUrl = config.public.strapiUrl || 'http://localhost:1337'
+    const formData = new FormData()
+    formData.append('files.file', file)
+    const response = await axios.post<NetflixImportResponse>(
+      `${strapiUrl}/api/wishlists/import-netflix-watchlist`,
+      formData,
+      {
+        headers: {
+          'Authorization': `Bearer ${token.value}`,
+          'Content-Type': 'multipart/form-data'
+        }
+      }
+    )
+    return response.data
+  }
+
   return {
     // State
     watchlistItems: readonly(watchlistItems),
@@ -329,7 +355,8 @@ export const useWatchlist = () => {
     updateWatchlistItem,
     // createTag, // Shelved for now
     // searchTags, // Shelved for now
-    
+    uploadNetflixWatchlist,
+
     // Computed
     getWatchlistStats,
     filterWatchlistItems
