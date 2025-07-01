@@ -24,13 +24,22 @@
 
       <!-- Play Button Overlay -->
       <div class="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-30 flex items-center justify-center transition-all duration-300">
-        <button 
-          v-if="item.trailer_url"
-          @click.stop="$emit('play-trailer', item.trailer_url)"
-          class="opacity-0 group-hover:opacity-100 bg-white bg-opacity-90 hover:bg-opacity-100 rounded-full p-4 transition-all duration-300 transform scale-75 group-hover:scale-100"
-        >
-          <Icon name="mdi:play" class="w-6 h-6 text-gray-900" />
-        </button>
+        <div class="opacity-0 group-hover:opacity-100 flex items-center gap-2 transition-all duration-300 transform scale-75 group-hover:scale-100">
+          <button 
+            v-if="item.trailer_url"
+            @click.stop="$emit('play-trailer', item.trailer_url)"
+            class="bg-white bg-opacity-90 hover:bg-opacity-100 rounded-full p-3 transition-all duration-300"
+          >
+            <Icon name="mdi:play" class="w-5 h-5 text-gray-900" />
+          </button>
+          
+          <button 
+            @click.stop="$emit('add-to-wishlist', item)"
+            class="bg-red-500 bg-opacity-90 hover:bg-opacity-100 rounded-full p-3 transition-all duration-300"
+          >
+            <Icon name="mdi:heart-outline" class="w-5 h-5 text-white" />
+          </button>
+        </div>
       </div>
     </div>
 
@@ -92,6 +101,7 @@ const props = defineProps<{
 
 defineEmits<{
   'play-trailer': [url: string]
+  'add-to-wishlist': [item: TrendingItem]
 }>()
 
 // Computed properties

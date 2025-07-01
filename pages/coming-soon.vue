@@ -293,9 +293,9 @@ onUnmounted(() => {
 
 // SEO
 useSeoMeta({
-  title: 'Coming Soon - Movie & TV Journal',
+  title: 'Coming Soon - TrendingNow',
   description: 'Discover upcoming movies and TV shows with release dates, trailers, and more.',
-  ogTitle: 'Coming Soon - Movie & TV Journal',
+  ogTitle: 'Coming Soon - TrendingNow',
   ogDescription: 'Discover upcoming movies and TV shows with release dates, trailers, and more.'
 })
 </script>

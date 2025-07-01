@@ -27,245 +27,588 @@
       <!-- Main Content -->
       <div class="flex-1 w-full lg:ml-0">
         <!-- Top Navigation -->
-        <TopBar @search="handleNewSearch" />
+        <TopBar />
 
-        <!-- Search Header -->
-        <div class="mb-8">
-          <div class="flex items-center gap-3 mb-4">
-            <button 
-              @click="$router.back()"
-              class="p-2 hover:bg-white rounded-lg transition-colors"
-            >
-              <Icon name="mdi:arrow-left" class="w-6 h-6 text-gray-600" />
-            </button>
-            <div>
-              <h1 class="text-2xl font-bold text-gray-900">Search Results</h1>
-              <p v-if="currentQuery" class="text-gray-600">
-                Results for "<span class="font-medium">{{ currentQuery }}</span>"
-                <span v-if="totalResults > 0" class="ml-2">
-                  ({{ totalResults }} {{ totalResults === 1 ? 'result' : 'results' }})
-                </span>
-              </p>
-            </div>
+        <!-- Page Header -->
+        <div class="bg-white rounded-2xl p-6 mb-6 shadow-sm border border-gray-200">
+          <div class="flex items-center gap-3 mb-2">
+            <Icon name="mdi:magnify" class="w-7 h-7 text-blue-600" />
+            <h1 class="text-2xl font-bold text-gray-900">Discover Trending Content</h1>
           </div>
+          <p class="text-gray-600">Search and filter through the latest trending movies and TV shows</p>
+        </div>
 
-          <!-- Search Filters -->
-          <div class="bg-white rounded-xl p-4 flex flex-wrap items-center gap-4">
-            <div class="flex items-center gap-2">
-              <Icon name="mdi:filter-variant" class="w-5 h-5 text-gray-400" />
-              <span class="text-sm text-gray-600">Filter by:</span>
+        <!-- Mobile Filters Toggle -->
+        <div class="lg:hidden mb-4">
+          <button
+            @click="showMobileFilters = !showMobileFilters"
+            class="w-full flex items-center justify-between bg-white rounded-2xl p-4 shadow-sm border border-gray-200"
+          >
+            <div class="flex items-center gap-3">
+              <Icon name="mdi:filter-variant" class="w-5 h-5 text-blue-600" />
+              <span class="font-medium text-gray-900">Filters</span>
+              <span v-if="activeFiltersCount > 0" class="bg-blue-100 text-blue-700 px-2 py-1 rounded-full text-xs">
+                {{ activeFiltersCount }}
+              </span>
             </div>
+            <Icon 
+              :name="showMobileFilters ? 'mdi:chevron-up' : 'mdi:chevron-down'" 
+              class="w-5 h-5 text-gray-400" 
+            />
+          </button>
+        </div>
+
+        <div class="flex flex-col lg:flex-row gap-6">
+          <!-- Filters Sidebar -->
+          <div :class="[
+            'bg-white rounded-2xl p-4 lg:p-6 shadow-sm border border-gray-200 h-fit transition-all duration-300',
+            'lg:w-80',
+            showMobileFilters ? 'block' : 'hidden lg:block'
+          ]">
+            <h2 class="text-lg font-semibold text-gray-900 mb-4 hidden lg:block">Filters</h2>
             
-            <select 
-              v-model="selectedType" 
-              @change="applyFilters"
-              class="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-            >
-              <option value="">All Types</option>
-              <option value="movie">Movies</option>
-              <option value="tv">TV Shows</option>
-            </select>
+            <!-- Search Input -->
+            <div class="mb-4 lg:mb-6">
+              <label class="block text-sm font-medium text-gray-700 mb-2">Search</label>
+              <div class="relative">
+                <input
+                  v-model="searchQuery"
+                  type="text"
+                  placeholder="Search trending content..."
+                  class="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors text-base"
+                  @input="async () => await applyFilters()"
+                />
+                <Icon name="mdi:magnify" class="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
+              </div>
+            </div>
 
-            <select 
-              v-model="selectedYear" 
-              @change="applyFilters"
-              class="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-            >
-              <option value="">Any Year</option>
-              <option v-for="year in yearOptions" :key="year" :value="year">
-                {{ year }}
-              </option>
-            </select>
+            <!-- Content Type Filter -->
+            <div class="mb-4 lg:mb-6">
+              <label class="block text-sm font-medium text-gray-700 mb-3">Content Type</label>
+              <div class="space-y-3">
+                <label class="flex items-center">
+                  <input
+                    v-model="selectedTypes"
+                    type="checkbox"
+                    value="movie"
+                    class="rounded border-gray-300 text-blue-600 focus:ring-blue-500 w-4 h-4"
+                    @change="async () => await applyFilters()"
+                  />
+                  <span class="ml-3 text-sm text-gray-700">Movies</span>
+                </label>
+                <label class="flex items-center">
+                  <input
+                    v-model="selectedTypes"
+                    type="checkbox"
+                    value="tv"
+                    class="rounded border-gray-300 text-blue-600 focus:ring-blue-500 w-4 h-4"
+                    @change="async () => await applyFilters()"
+                  />
+                  <span class="ml-3 text-sm text-gray-700">TV Shows</span>
+                </label>
+              </div>
+            </div>
 
+            <!-- Platform Filter -->
+            <div class="mb-4 lg:mb-6">
+              <label class="block text-sm font-medium text-gray-700 mb-3">Platforms</label>
+              <div class="grid grid-cols-2 lg:grid-cols-2 gap-2 lg:gap-3">
+                <button
+                  v-for="platform in platforms"
+                  :key="platform.name"
+                  @click="togglePlatform(platform.name)"
+                  :class="[
+                    'flex flex-col items-center p-3 lg:p-4 rounded-lg border-2 transition-all duration-200 hover:scale-105 min-h-[80px] lg:min-h-[auto]',
+                    selectedPlatforms.includes(platform.name)
+                      ? 'border-blue-500 bg-blue-50 shadow-md'
+                      : 'border-gray-200 bg-white hover:border-gray-300'
+                  ]"
+                >
+                  <Icon :name="platform.icon" class="w-6 h-6 lg:w-8 lg:h-8 mb-2" :class="platform.color" />
+                  <span class="text-xs font-medium text-gray-700 text-center leading-tight">{{ platform.displayName }}</span>
+                </button>
+              </div>
+            </div>
+
+            <!-- Keyword Filter -->
+            <div class="mb-4 lg:mb-6">
+              <div class="flex items-center justify-between mb-3">
+                <label class="text-sm font-medium text-gray-700">Keywords</label>
+                <button
+                  @click="openKeywordModal"
+                  :disabled="keywordsLoading"
+                  class="text-xs text-blue-600 hover:text-blue-800 transition-colors disabled:opacity-50 px-2 py-1 rounded"
+                >
+                  {{ keywordsLoading ? 'Loading...' : (selectedKeywords?.length || 0) > 0 ? 'Edit' : 'Select' }}
+                </button>
+              </div>
+              
+              <!-- Selected Keywords Display -->
+              <div v-if="selectedKeywords && selectedKeywords.length > 0" class="space-y-2">
+                <div class="flex flex-wrap gap-2">
+                  <span
+                    v-for="keyword in displayedKeywords"
+                    :key="keyword"
+                    class="inline-flex items-center gap-1 px-3 py-2 bg-blue-100 text-blue-800 rounded-full text-xs"
+                  >
+                    {{ keyword }}
+                    <button
+                      @click="removeKeyword(keyword)"
+                      class="text-blue-600 hover:text-blue-800 ml-1"
+                    >
+                      <Icon name="mdi:close" class="w-3 h-3" />
+                    </button>
+                  </span>
+                  <button
+                    v-if="hasMoreKeywords"
+                    @click="openKeywordModal"
+                    class="inline-flex items-center gap-1 px-3 py-2 bg-gray-100 text-gray-600 rounded-full text-xs hover:bg-gray-200 transition-colors"
+                  >
+                    +{{ (selectedKeywords?.length || 0) - 4 }} more
+                  </button>
+                </div>
+              </div>
+              
+              <!-- Empty State -->
+              <div v-else class="text-center py-4 border border-dashed border-gray-300 rounded-lg">
+                <Icon name="mdi:tag-outline" class="w-6 h-6 text-gray-400 mx-auto mb-2" />
+                <p class="text-xs text-gray-500 mb-2">No keywords selected</p>
+                <button
+                  @click="openKeywordModal"
+                  :disabled="keywordsLoading"
+                  class="text-xs text-blue-600 hover:text-blue-800 transition-colors disabled:opacity-50 px-2 py-1 rounded"
+                >
+                  {{ keywordsLoading ? 'Extracting keywords...' : 'Browse Keywords' }}
+                </button>
+              </div>
+            </div>
+
+            <!-- Rating Range -->
+            <div class="mb-4 lg:mb-6">
+              <label class="block text-sm font-medium text-gray-700 mb-3">Minimum Rating</label>
+              <div class="space-y-2">
+                <input
+                  v-model.number="minRating"
+                  type="range"
+                  min="0"
+                  max="10"
+                  step="0.5"
+                  class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer slider"
+                  @input="async () => await applyFilters()"
+                />
+                <div class="flex justify-between text-xs text-gray-500">
+                  <span>0</span>
+                  <span class="font-medium text-blue-600">{{ minRating }}</span>
+                  <span>10</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Sort Options -->
+            <div class="mb-4 lg:mb-6">
+              <label class="block text-sm font-medium text-gray-700 mb-3">Sort By</label>
+              <select
+                v-model="sortBy"
+                class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-base"
+                @change="async () => await applyFilters()"
+              >
+                <option value="trending_rank">Trending Rank</option>
+                <option value="rating_desc">Rating (High to Low)</option>
+                <option value="rating_asc">Rating (Low to High)</option>
+                <option value="title">Title (A-Z)</option>
+                <option value="release_date">Release Date</option>
+              </select>
+            </div>
+
+            <!-- Reset Filters -->
             <button
-              v-if="hasActiveFilters"
-              @click="clearFilters"
-              class="px-3 py-2 text-sm bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors flex items-center gap-1"
+              @click="resetFilters"
+              class="w-full py-3 px-4 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg transition-colors flex items-center justify-center gap-2"
             >
-              <Icon name="mdi:close" class="w-4 h-4" />
-              Clear
+              <Icon name="mdi:refresh" class="w-4 h-4" />
+              Reset Filters
             </button>
           </div>
-        </div>
 
-        <!-- Loading State -->
-        <div v-if="isSearching && searchResults.length === 0" class="text-center py-12">
-          <Icon name="mdi:loading" class="w-8 h-8 animate-spin mx-auto mb-4 text-blue-600" />
-          <p class="text-gray-600">Searching...</p>
-        </div>
+          <!-- Results Grid -->
+          <div class="flex-1">
+            <!-- Results Header -->
+            <div class="bg-white rounded-2xl p-3 lg:p-4 mb-4 lg:mb-6 shadow-sm border border-gray-200">
+              <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+                <div class="flex flex-wrap items-center gap-2 lg:gap-3">
+                  <span class="text-sm text-gray-600">
+                    {{ filteredItems?.length || 0 }} {{ (filteredItems?.length || 0) === 1 ? 'result' : 'results' }} found
+                  </span>
+                  <div v-if="activeFiltersCount > 0" class="flex items-center gap-2">
+                    <span class="text-xs text-gray-500 hidden sm:inline">•</span>
+                    <span class="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded-full">
+                      {{ activeFiltersCount }} filter{{ activeFiltersCount === 1 ? '' : 's' }} active
+                    </span>
+                  </div>
+                </div>
+                <div class="flex items-center gap-2">
+                  <button
+                    @click="viewMode = 'grid'"
+                    :class="[
+                      'p-2 rounded-lg transition-colors',
+                      viewMode === 'grid' ? 'bg-blue-100 text-blue-600' : 'text-gray-400 hover:text-gray-600'
+                    ]"
+                  >
+                    <Icon name="mdi:view-grid" class="w-5 h-5" />
+                  </button>
+                  <button
+                    @click="viewMode = 'list'"
+                    :class="[
+                      'p-2 rounded-lg transition-colors',
+                      viewMode === 'list' ? 'bg-blue-100 text-blue-600' : 'text-gray-400 hover:text-gray-600'
+                    ]"
+                  >
+                    <Icon name="mdi:view-list" class="w-5 h-5" />
+                  </button>
+                </div>
+              </div>
+            </div>
 
-        <!-- No Results -->
-        <div v-else-if="!isSearching && searchResults.length === 0 && currentQuery" class="text-center py-12">
-          <Icon name="mdi:movie-outline" class="w-16 h-16 text-gray-300 mx-auto mb-4" />
-          <h3 class="text-lg font-semibold text-gray-900 mb-2">No results found</h3>
-          <p class="text-gray-600 mb-6">Try adjusting your search terms or filters</p>
-          <button
-            @click="clearFilters"
-            class="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-          >
-            Clear Filters
-          </button>
-        </div>
+            <!-- Loading State -->
+            <div v-if="loading" class="flex items-center justify-center py-12">
+              <div class="text-center">
+                <Icon name="mdi:loading" class="w-8 h-8 animate-spin text-blue-600 mx-auto mb-2" />
+                <p class="text-gray-600">Loading trending content...</p>
+              </div>
+            </div>
 
-        <!-- Search Results Grid -->
-        <div v-else class="space-y-8">
-          <!-- Featured Result (First result gets special treatment) -->
-          <div v-if="searchResults.length > 0" class="bg-white rounded-2xl overflow-hidden shadow-sm">
-            <SearchResultFeatured 
-              :item="searchResults[0]"
-              @play-trailer="playTrailer"
-            />
+            <!-- Empty State -->
+            <div v-else-if="!filteredItems || filteredItems.length === 0" class="text-center py-12">
+              <Icon name="mdi:movie-search" class="w-16 h-16 text-gray-300 mx-auto mb-4" />
+              <h3 class="text-lg font-medium text-gray-900 mb-2">No results found</h3>
+              <p class="text-gray-600 mb-4">Try adjusting your filters or search terms</p>
+              <button
+                @click="resetFilters"
+                class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
+              >
+                Clear All Filters
+              </button>
+            </div>
+
+            <!-- Results Grid -->
+            <div v-else>
+              <!-- Grid View -->
+              <div v-if="viewMode === 'grid'" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 lg:gap-6">
+                <TrendingCard
+                  v-for="item in paginatedItems"
+                  :key="`trending-${item.tmdb_id}`"
+                  :item="item"
+                  @play-trailer="playTrailer"
+                  @add-to-wishlist="addToWishlist"
+                />
+              </div>
+
+              <!-- List View -->
+              <div v-else class="space-y-3 lg:space-y-4">
+                <div
+                  v-for="item in paginatedItems"
+                  :key="`trending-list-${item.tmdb_id}`"
+                  class="bg-white rounded-xl p-3 lg:p-4 shadow-sm border border-gray-200 hover:shadow-md transition-shadow"
+                >
+                  <div class="flex items-center gap-3 lg:gap-4">
+                    <img
+                      :src="`https://image.tmdb.org/t/p/w154${item.poster_path}`"
+                      :alt="item.title"
+                      class="w-12 h-18 lg:w-16 lg:h-24 object-cover rounded-lg flex-shrink-0"
+                      @error="handleImageError"
+                    />
+                    <div class="flex-1 min-w-0">
+                      <h3 class="font-semibold text-gray-900 mb-1 text-sm lg:text-base truncate">{{ item.title }}</h3>
+                      <div class="flex flex-wrap items-center gap-2 lg:gap-4 text-xs lg:text-sm text-gray-600 mb-2">
+                        <span class="capitalize">{{ item.type === 'tv' ? 'TV Show' : 'Movie' }}</span>
+                        <span>{{ item.release_year }}</span>
+                        <span class="px-2 py-1 bg-gray-100 rounded text-xs">{{ item.platform }}</span>
+                      </div>
+                      <div class="flex items-center gap-2">
+                        <Icon name="mdi:star" class="w-3 h-3 lg:w-4 lg:h-4 text-yellow-500" />
+                        <span class="text-xs lg:text-sm font-medium">{{ item.tmdb_rating?.toFixed(1) || 'N/A' }}</span>
+                      </div>
+                    </div>
+                    <button
+                      v-if="item.trailer_url"
+                      @click="playTrailer(item.trailer_url)"
+                      class="p-2 lg:p-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors flex-shrink-0"
+                    >
+                      <Icon name="mdi:play" class="w-4 h-4 lg:w-5 lg:h-5" />
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Pagination -->
+              <div v-if="totalPages > 1" class="flex items-center justify-center gap-2 mt-6 lg:mt-8">
+                <button
+                  @click="currentPage = Math.max(1, currentPage - 1)"
+                  :disabled="currentPage === 1"
+                  class="p-2 lg:p-3 rounded-lg bg-white border border-gray-300 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 min-w-[44px] flex items-center justify-center"
+                >
+                  <Icon name="mdi:chevron-left" class="w-4 h-4 lg:w-5 lg:h-5" />
+                </button>
+                
+                <span class="px-3 lg:px-4 py-2 text-sm text-gray-600 text-center">
+                  <span class="hidden sm:inline">Page </span>{{ currentPage }}<span class="hidden sm:inline"> of {{ totalPages }}</span>
+                  <span class="sm:hidden">/{{ totalPages }}</span>
+                </span>
+                
+                <button
+                  @click="currentPage = Math.min(totalPages, currentPage + 1)"
+                  :disabled="currentPage === totalPages"
+                  class="p-2 lg:p-3 rounded-lg bg-white border border-gray-300 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 min-w-[44px] flex items-center justify-center"
+                >
+                  <Icon name="mdi:chevron-right" class="w-4 h-4 lg:w-5 lg:h-5" />
+                </button>
+              </div>
+            </div>
           </div>
-
-          <!-- Regular Results Grid -->
-          <div v-if="searchResults.length > 1" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
-            <SearchResultCard
-              v-for="item in searchResults.slice(1)"
-              :key="`${item.id}-${item.media_type}`"
-              :item="item"
-              @play-trailer="playTrailer"
-            />
-          </div>
-
-          <!-- Load More Button -->
-          <div v-if="currentPage < totalPages" class="text-center py-8">
-            <button
-              @click="loadMore"
-              :disabled="isSearching"
-              class="px-8 py-3 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed text-white rounded-lg font-semibold transition-colors flex items-center gap-2 mx-auto"
-            >
-              <Icon 
-                :name="isSearching ? 'mdi:loading' : 'mdi:plus'" 
-                :class="['w-5 h-5', { 'animate-spin': isSearching }]" 
-              />
-              {{ isSearching ? 'Loading...' : 'Load More' }}
-            </button>
-          </div>
-        </div>
-
-        <!-- Error State -->
-        <div v-if="searchError" class="bg-red-50 border border-red-200 rounded-xl p-6 text-center">
-          <Icon name="mdi:alert-circle" class="w-8 h-8 text-red-500 mx-auto mb-2" />
-          <h3 class="text-lg font-semibold text-red-900 mb-2">Search Error</h3>
-          <p class="text-red-700 mb-4">{{ searchError }}</p>
-          <button
-            @click="retrySearch"
-            class="px-6 py-3 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
-          >
-            Try Again
-          </button>
         </div>
       </div>
     </div>
 
-    <!-- Video Modal -->
+    <!-- Video Modal for Trailers -->
     <VideoModal 
       :is-open="isVideoModalOpen"
       :video-url="currentVideoUrl"
       @close="closeVideoModal"
     />
+
+    <!-- Keyword Selection Modal -->
+    <BackendKeywordSelectionModal
+      :show="showKeywordModal"
+      :selected-keywords="selectedKeywords"
+      @close="showKeywordModal = false"
+      @apply="onKeywordsApplied"
+    />
   </div>
 </template>
 
 <script setup lang="ts">
-import { useSearch } from '~/composables/useSearch'
-import type { TMDBSearchResult, SearchFilters } from '~/composables/useSearch'
+import type { TrendingItem } from '~/composables/useTrending'
 
-// Protect this page with authentication middleware
+// Set page metadata
 definePageMeta({
-  middleware: 'auth'
+  title: 'Search Trending Content'
 })
 
 // Composables
-const route = useRoute()
-const router = useRouter()
-const { 
-  searchResults, 
-  isSearching, 
-  searchError, 
-  currentQuery, 
-  currentPage, 
-  totalPages, 
-  totalResults,
-  searchContent,
-  loadMoreResults,
-  clearSearch
-} = useSearch()
+const { getAllTrending } = useTrending()
+const { filterItemsByKeywords, extractKeywordsFromItems } = useBackendKeywords()
 
 // State
 const showMobileMenu = ref(false)
-const selectedType = ref('')
-const selectedYear = ref('')
+const showMobileFilters = ref(false)
+const loading = ref(false)
+const keywordsLoading = ref(false)
+const allItems = ref<TrendingItem[]>([])
+const filteredItems = ref<TrendingItem[]>([])
+const searchQuery = ref('')
+const selectedTypes = ref<string[]>(['movie', 'tv'])
+const selectedPlatforms = ref<string[]>([])
+const selectedKeywords = ref<string[]>([])
+const minRating = ref(0)
+const sortBy = ref('trending_rank')
+const viewMode = ref<'grid' | 'list'>('grid')
+const currentPage = ref(1)
+const itemsPerPage = 8
+
+// Modal state
+const showKeywordModal = ref(false)
+
+// Video modal state
 const isVideoModalOpen = ref(false)
 const currentVideoUrl = ref('')
 
-// Computed
-const hasActiveFilters = computed(() => {
-  return selectedType.value !== '' || selectedYear.value !== ''
+// Platform definitions
+const platforms = [
+  { name: 'Netflix', displayName: 'Netflix', icon: 'mdi:netflix', color: 'text-red-600' },
+  { name: 'HBO Max', displayName: 'HBO Max', icon: 'mdi:television-box', color: 'text-purple-600' },
+  { name: 'Prime Video', displayName: 'Prime', icon: 'mdi:amazon', color: 'text-blue-600' },
+  { name: 'Paramount+', displayName: 'Paramount+', icon: 'mdi:play-box', color: 'text-blue-500' },
+  { name: 'Disney+', displayName: 'Disney+', icon: 'mdi:disney', color: 'text-blue-700' },
+  { name: 'Apple TV+', displayName: 'Apple TV+', icon: 'mdi:apple', color: 'text-gray-800' },
+  { name: 'Hulu', displayName: 'Hulu', icon: 'mdi:television-play', color: 'text-green-500' },
+  { name: 'Theaters', displayName: 'Theaters', icon: 'mdi:movie', color: 'text-yellow-600' }
+]
+
+// Computed properties
+const activeFiltersCount = computed(() => {
+  let count = 0
+  if (searchQuery.value) count++
+  if (selectedTypes.value && selectedTypes.value.length < 2) count++
+  if (selectedPlatforms.value && selectedPlatforms.value.length > 0) count++
+  if (selectedKeywords.value && selectedKeywords.value.length > 0) count++
+  if (minRating.value > 0) count++
+  if (sortBy.value !== 'trending_rank') count++
+  return count
 })
 
-const yearOptions = computed(() => {
-  const currentYear = new Date().getFullYear()
-  const years = []
-  for (let year = currentYear; year >= 1950; year--) {
-    years.push(year)
-  }
-  return years
+const displayedKeywords = computed(() => {
+  return selectedKeywords.value ? selectedKeywords.value.slice(0, 4) : []
+})
+
+const hasMoreKeywords = computed(() => {
+  return selectedKeywords.value && selectedKeywords.value.length > 4
+})
+
+const paginatedItems = computed(() => {
+  if (!filteredItems.value || !Array.isArray(filteredItems.value)) return []
+  const start = (currentPage.value - 1) * itemsPerPage
+  const end = start + itemsPerPage
+  return filteredItems.value.slice(start, end)
+})
+
+const totalPages = computed(() => {
+  if (!filteredItems.value || !Array.isArray(filteredItems.value)) return 1
+  return Math.ceil(filteredItems.value.length / itemsPerPage)
 })
 
 // Methods
-const handleNewSearch = (query: string) => {
-  router.push(`/search?q=${encodeURIComponent(query)}`)
-}
-
-const applyFilters = () => {
-  if (!currentQuery.value) return
-
-  const filters: SearchFilters = {}
-  
-  if (selectedType.value) {
-    filters.type = selectedType.value as 'movie' | 'tv'
-  }
-  
-  if (selectedYear.value) {
-    filters.year = parseInt(selectedYear.value)
-  }
-
-  searchContent(currentQuery.value, filters)
-}
-
-const clearFilters = () => {
-  selectedType.value = ''
-  selectedYear.value = ''
-  
-  if (currentQuery.value) {
-    searchContent(currentQuery.value)
+const fetchTrendingItems = async () => {
+  try {
+    loading.value = true
+    keywordsLoading.value = true
+    
+    const response = await getAllTrending()
+    allItems.value = response.data || []
+    
+    await applyFilters()
+  } catch (error) {
+    console.error('Error fetching trending items:', error)
+    allItems.value = []
+  } finally {
+    loading.value = false
+    keywordsLoading.value = false
   }
 }
 
-const loadMore = () => {
-  const filters: SearchFilters = {}
-  
-  if (selectedType.value) {
-    filters.type = selectedType.value as 'movie' | 'tv'
+const togglePlatform = async (platform: string) => {
+  const index = selectedPlatforms.value.indexOf(platform)
+  if (index > -1) {
+    selectedPlatforms.value.splice(index, 1)
+  } else {
+    selectedPlatforms.value.push(platform)
   }
-  
-  if (selectedYear.value) {
-    filters.year = parseInt(selectedYear.value)
-  }
-
-  loadMoreResults(filters)
+  await applyFilters()
 }
 
-const retrySearch = () => {
-  if (currentQuery.value) {
-    applyFilters()
+const applyFilters = async () => {
+  if (!allItems.value || !Array.isArray(allItems.value)) {
+    filteredItems.value = []
+    return
   }
+  
+  let items = [...allItems.value]
+
+  // Search filter
+  if (searchQuery.value) {
+    const query = searchQuery.value.toLowerCase()
+    items = items.filter(item => 
+      item.title?.toLowerCase().includes(query) ||
+      item.overview?.toLowerCase().includes(query) ||
+      item.genres?.some((genre: string) => genre.toLowerCase().includes(query))
+    )
+  }
+
+  // Type filter
+  if (selectedTypes.value && selectedTypes.value.length > 0 && selectedTypes.value.length < 2) {
+    items = items.filter(item => selectedTypes.value.includes(item.type))
+  }
+
+  // Platform filter
+  if (selectedPlatforms.value && selectedPlatforms.value.length > 0) {
+    items = items.filter(item => selectedPlatforms.value.includes(item.platform))
+  }
+
+  // Keyword filter
+  if (selectedKeywords.value && selectedKeywords.value.length > 0) {
+    items = await filterItemsByKeywords(items, selectedKeywords.value)
+  }
+
+  // Rating filter
+  if (minRating.value > 0) {
+    items = items.filter(item => (item.tmdb_rating || 0) >= minRating.value)
+  }
+
+  // Sort items
+  switch (sortBy.value) {
+    case 'rating_desc':
+      items.sort((a, b) => (b.tmdb_rating || 0) - (a.tmdb_rating || 0))
+      break
+    case 'rating_asc':
+      items.sort((a, b) => (a.tmdb_rating || 0) - (b.tmdb_rating || 0))
+      break
+    case 'trending_rank':
+      items.sort((a, b) => (a.trending_rank || 999) - (b.trending_rank || 999))
+      break
+    case 'release_date':
+      items.sort((a, b) => {
+        const dateA = new Date(a.release_date || '1900-01-01').getTime()
+        const dateB = new Date(b.release_date || '1900-01-01').getTime()
+        return dateB - dateA
+      })
+      break
+    case 'title':
+      items.sort((a, b) => a.title.localeCompare(b.title))
+      break
+  }
+
+  filteredItems.value = items
+  currentPage.value = 1
+  
+  // Close mobile filters on mobile devices when filters are applied
+  if (window.innerWidth < 1024) {
+    showMobileFilters.value = false
+  }
+}
+
+const resetFilters = async () => {
+  searchQuery.value = ''
+  selectedTypes.value = ['movie', 'tv']
+  selectedPlatforms.value = []
+  selectedKeywords.value = []
+  minRating.value = 0
+  sortBy.value = 'trending_rank'
+  currentPage.value = 1
+  await applyFilters()
 }
 
 const playTrailer = (trailerUrl: string) => {
-  currentVideoUrl.value = trailerUrl
-  isVideoModalOpen.value = true
+  if (trailerUrl) {
+    currentVideoUrl.value = trailerUrl
+    isVideoModalOpen.value = true
+  }
+}
+
+const addToWishlist = (item: TrendingItem) => {
+  // TODO: Implement wishlist functionality
+  console.log('Adding to wishlist:', item.title)
+}
+
+const openKeywordModal = () => {
+  showKeywordModal.value = true
+}
+
+const removeKeyword = async (keyword: string) => {
+  const index = selectedKeywords.value.indexOf(keyword)
+  if (index > -1) {
+    selectedKeywords.value.splice(index, 1)
+    await applyFilters()
+  }
+}
+
+const onKeywordsUpdated = async (keywords: string[]) => {
+  selectedKeywords.value = keywords
+  await applyFilters()
+}
+
+const onKeywordsApplied = async (keywords: string[]) => {
+  selectedKeywords.value = keywords
+  showKeywordModal.value = false
+  await applyFilters()
 }
 
 const closeVideoModal = () => {
@@ -273,32 +616,67 @@ const closeVideoModal = () => {
   currentVideoUrl.value = ''
 }
 
-// Initialize search from query parameter
-onMounted(async () => {
-  const query = route.query.q as string
-  
-  if (query) {
-    await searchContent(query)
-  } else {
-    // Redirect to home if no search query
-    router.push('/')
-  }
+const handleImageError = (event: Event) => {
+  const target = event.target as HTMLImageElement
+  target.src = '/images/default-poster.jpg'
+}
+
+// Lifecycle
+onMounted(() => {
+  fetchTrendingItems()
 })
 
-// Watch for query changes
-watch(() => route.query.q, async (newQuery) => {
-  if (newQuery && typeof newQuery === 'string') {
-    clearSearch()
-    await searchContent(newQuery)
-  }
-})
-
-// Cleanup on unmount
-onUnmounted(() => {
-  clearSearch()
+// Watch for page changes to reset pagination
+watch(() => [selectedTypes.value, selectedPlatforms.value, selectedKeywords.value, minRating.value, sortBy.value], () => {
+  currentPage.value = 1
 })
 </script>
 
 <style scoped>
-/* Custom styles for search page */
+/* Custom slider styling */
+.slider::-webkit-slider-thumb {
+  appearance: none;
+  height: 24px;
+  width: 24px;
+  border-radius: 50%;
+  background: #3B82F6;
+  cursor: pointer;
+  border: 2px solid #ffffff;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.slider::-moz-range-thumb {
+  height: 24px;
+  width: 24px;
+  border-radius: 50%;
+  background: #3B82F6;
+  cursor: pointer;
+  border: 2px solid #ffffff;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+/* Mobile-specific optimizations */
+@media (max-width: 1023px) {
+  .slider::-webkit-slider-thumb {
+    height: 28px;
+    width: 28px;
+  }
+  
+  .slider::-moz-range-thumb {
+    height: 28px;
+    width: 28px;
+  }
+}
+
+/* Ensure proper touch targets on mobile */
+@media (max-width: 768px) {
+  button, input[type="checkbox"], input[type="range"], select {
+    min-height: 44px;
+  }
+  
+  /* Exception for small buttons that are grouped */
+  .inline-flex button {
+    min-height: auto;
+  }
+}
 </style>

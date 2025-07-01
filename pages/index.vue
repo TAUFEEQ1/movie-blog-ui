@@ -27,96 +27,302 @@
       <!-- Main Content -->
       <div class="flex-1 w-full lg:ml-0">
         <!-- Top Navigation -->
-        <TopBar 
-          @search="handleSearch"
-        />
+        <TopBar />
 
-        <!-- Hero Section -->
-        <HeroSection 
-          @play-trailer="openVideoModal"
-          @add-to-journal="openJournalModal"
-        />
+        <!-- Hero Section with Auto-Rotating Trending Movies -->
+        <div class="relative bg-gradient-to-r from-blue-900 to-purple-900 rounded-3xl overflow-hidden mb-8 h-96 md:h-[500px] transition-all duration-500">
+          <!-- Background Video/Image -->
+          <div 
+            v-if="currentHeroItem"
+            class="absolute inset-0 transition-opacity duration-1000"
+            :class="{ 'opacity-100': currentHeroItem, 'opacity-0': !currentHeroItem }"
+          >
+            <!-- YouTube Video Background -->
+            <iframe 
+              v-if="currentHeroItem.trailer_url && showVideo && isYouTubeUrl(currentHeroItem.trailer_url)"
+              :key="`youtube-${currentHeroItem.tmdb_id}`"
+              class="absolute inset-0 w-full h-full object-cover pointer-events-none transition-opacity duration-1000"
+              :src="`https://www.youtube.com/embed/${getYouTubeVideoId(currentHeroItem.trailer_url)}?autoplay=1&mute=1&loop=1&controls=0&showinfo=0&rel=0&modestbranding=1&playsinline=1&playlist=${getYouTubeVideoId(currentHeroItem.trailer_url)}`"
+              frameborder="0"
+              allow="autoplay; fullscreen"
+              allowfullscreen
+              @load="onVideoLoaded"
+              @error="onVideoError"
+            ></iframe>
+            
+            <!-- Direct Video Background (for non-YouTube videos) -->
+            <video 
+              v-else-if="currentHeroItem.trailer_url && showVideo && getVideoSource(currentHeroItem.trailer_url)"
+              ref="heroVideoRef"
+              :key="`video-${currentHeroItem.tmdb_id}`"
+              class="absolute inset-0 w-full h-full object-cover transition-opacity duration-1000"
+              :src="getVideoSource(currentHeroItem.trailer_url) || ''"
+              autoplay
+              muted
+              loop
+              playsinline
+              @loadeddata="onVideoLoaded"
+              @error="onVideoError"
+            ></video>
+            
+            <!-- Fallback Image Background -->
+            <div 
+              v-if="!currentHeroItem.trailer_url || !showVideo"
+              class="absolute inset-0 bg-cover bg-center transition-all duration-1000"
+              :style="`background-image: url('https://image.tmdb.org/t/p/w1280${currentHeroItem.backdrop_path}')`"
+            ></div>
+            
+            <!-- Overlay -->
+            <div class="absolute inset-0 bg-gradient-to-r from-black/60 via-black/30 to-black/60 transition-opacity duration-1000"></div>
+          </div>
 
-        <!-- Content Sections -->
+          <!-- Loading State -->
+          <div 
+            v-if="!currentHeroItem" 
+            class="absolute inset-0 bg-gradient-to-r from-blue-900 to-purple-900 flex items-center justify-center"
+          >
+            <div class="text-white text-center">
+              <Icon name="mdi:loading" class="w-8 h-8 animate-spin mx-auto mb-2" />
+              <p>Loading trending content...</p>
+            </div>
+          </div>
+
+          <!-- Content -->
+          <div class="relative z-10 flex items-center h-full p-8">
+            <div class="flex-1">
+              <div class="flex items-center gap-2 mb-2">
+                <Icon name="mdi:fire" class="w-5 h-5 text-orange-400" />
+                <span class="text-orange-400 font-medium">Trending Now</span>
+                <span class="text-white opacity-60 text-sm ml-2">
+                  {{ heroIndex + 1 }} / {{ heroItems.length }}
+                </span>
+              </div>
+
+              <h1 v-if="currentHeroItem" class="text-4xl md:text-6xl font-bold text-white mb-4 transition-all duration-500">
+                {{ currentHeroItem.title }}
+              </h1>
+
+              <p v-if="currentHeroItem" class="text-lg text-white mb-6 max-w-xl opacity-90 transition-all duration-500">
+                {{ currentHeroItem.overview }}
+              </p>
+
+              <!-- Rating Display and Actions -->
+              <div class="flex items-center gap-4 mb-6">
+                <div class="flex items-center gap-2">
+                  <span class="text-white font-semibold">{{ currentHeroItem?.tmdb_rating?.toFixed(1) }}</span>
+                  <span class="text-white opacity-75">TMDB</span>
+                </div>
+              </div>
+
+              <!-- Action Buttons -->
+              <div class="flex items-center gap-4">
+                <button 
+                  v-if="currentHeroItem?.trailer_url"
+                  @click="playTrailer(currentHeroItem.trailer_url)"
+                  class="bg-white text-gray-900 px-6 py-3 rounded-xl font-semibold hover:bg-gray-100 transition-colors flex items-center gap-2"
+                >
+                  <Icon name="mdi:play" class="w-5 h-5" />
+                  Watch Trailer
+                </button>
+
+                <button 
+                  @click="addToWishlist(currentHeroItem)"
+                  class="bg-blue-600 bg-opacity-20 text-white px-6 py-3 rounded-xl font-semibold hover:bg-opacity-30 transition-colors flex items-center gap-2 backdrop-blur-sm"
+                >
+                  <Icon name="mdi:heart-outline" class="w-5 h-5" />
+                  Add to Wishlist
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Hero Navigation Dots -->
+          <div class="absolute bottom-4 right-4 z-20 flex items-center gap-2">
+            <button
+              v-for="(item, index) in heroItems"
+              :key="`hero-dot-${item.tmdb_id}`"
+              @click="goToHeroItem(index)"
+              :class="[
+                'w-3 h-3 rounded-full transition-all duration-300 relative overflow-hidden',
+                index === heroIndex 
+                  ? 'bg-white scale-125' 
+                  : 'bg-white bg-opacity-50 hover:bg-opacity-75'
+              ]"
+            >
+              <!-- Progress indicator for current item -->
+              <div 
+                v-if="index === heroIndex && isAutoRotating"
+                class="absolute inset-0 bg-orange-400 rounded-full origin-center animate-pulse"
+                :style="{ 
+                  animation: 'progress-fill 8s linear infinite'
+                }"
+              ></div>
+            </button>
+          </div>
+
+          <!-- Auto-rotation Controls -->
+          <div class="absolute top-4 right-4 z-20 flex items-center gap-2">
+            <!-- Video/Image indicator -->
+            <div 
+              v-if="currentHeroItem?.trailer_url"
+              class="flex items-center gap-1 px-2 py-1 bg-black bg-opacity-30 rounded-lg backdrop-blur-sm text-white text-xs"
+            >
+              <Icon :name="showVideo && (isYouTubeUrl(currentHeroItem.trailer_url) || getVideoSource(currentHeroItem.trailer_url)) ? 'mdi:play-circle' : 'mdi:image'" class="w-3 h-3" />
+              <span>{{ showVideo && (isYouTubeUrl(currentHeroItem.trailer_url) || getVideoSource(currentHeroItem.trailer_url)) ? 'Video' : 'Image' }}</span>
+            </div>
+            
+            <button
+              @click="toggleAutoRotation"
+              :class="[
+                'p-2 rounded-lg backdrop-blur-sm transition-colors',
+                isAutoRotating 
+                  ? 'bg-white bg-opacity-20 text-white' 
+                  : 'bg-white bg-opacity-30 text-white hover:bg-opacity-40'
+              ]"
+              :title="isAutoRotating ? 'Pause auto-rotation' : 'Resume auto-rotation'"
+            >
+              <Icon :name="isAutoRotating ? 'mdi:pause' : 'mdi:play'" class="w-5 h-5" />
+            </button>
+          </div>
+        </div>
+
+        <!-- Content Grid -->
         <div class="grid grid-cols-1 xl:grid-cols-3 gap-6">
-          <!-- Main Movie Sections -->
+          <!-- Main Sections -->
           <div class="xl:col-span-2 space-y-8">
-            <!-- Journal Entry Widget -->
-            <JournalEntryWidget 
-              ref="journalWidget"
-            />
+            <!-- Top Picks (derived from trending) -->
+            <div class="bg-white rounded-2xl p-6">
+              <div class="flex items-center justify-between mb-6">
+                <div class="flex items-center gap-3">
+                  <Icon name="mdi:star" class="w-6 h-6 text-yellow-500" />
+                  <h2 class="text-2xl font-bold text-gray-900">Top Picks</h2>
+                </div>
+                <button 
+                  @click="shuffleTopPicks"
+                  class="flex items-center gap-2 px-4 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
+                >
+                  <Icon name="mdi:shuffle-variant" class="w-4 h-4" />
+                  Shuffle
+                </button>
+              </div>
+              
+              <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                <TrendingCard 
+                  v-for="item in topPicks" 
+                  :key="`top-pick-${item.tmdb_id}`"
+                  :item="item"
+                  @play-trailer="playTrailer"
+                  @add-to-wishlist="addToWishlist"
+                />
+              </div>
+            </div>
 
-            <!-- Trending Now -->
-            <MovieSection 
-              title="Trending now"
-              icon="mdi:fire"
-              :movies="trendingMovies"
-              :show-view-all="true"
-              :show-shuffle="true"
-              @play-trailer="openVideoModal"
-              @toggle-favorite="handleToggleFavorite"
-              @view-all="viewAllTrending"
-              @shuffle="shuffleTrending"
-            />
+            <!-- All Trending Content -->
+            <div class="bg-white rounded-2xl p-6">
+              <div class="flex items-center justify-between mb-6">
+                <div class="flex items-center gap-3">
+                  <Icon name="mdi:fire" class="w-6 h-6 text-orange-500" />
+                  <h2 class="text-2xl font-bold text-gray-900">Trending Now</h2>
+                  <span class="text-sm text-gray-500">Updated within 48 hours</span>
+                </div>
+                
+                <!-- Filter Controls -->
+                <div class="flex items-center gap-3">
+                  <select 
+                    v-model="selectedType" 
+                    @change="applyFilters"
+                    class="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  >
+                    <option value="">All Types</option>
+                    <option value="movie">Movies</option>
+                    <option value="tv">TV Shows</option>
+                  </select>
+                </div>
+              </div>
+              
+              <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-4 gap-6">
+                <TrendingCard 
+                  v-for="item in paginatedItems" 
+                  :key="`${item.tmdb_id}-${item.type}`"
+                  :item="item"
+                  @play-trailer="playTrailer"
+                  @add-to-wishlist="addToWishlist"
+                />
+              </div>
 
-            <!-- Coming Soon -->
-            <MovieSection 
-              title="Coming soon"
-              :movies="comingSoonMovies"
-              :show-view-all="true"
-              @play-trailer="openVideoModal"
-              @toggle-favorite="handleToggleFavorite"
-              @view-all="viewAllComingSoon"
-            />
-
-            <!-- Recently Watched Blog Posts -->
-            <MovieSection 
-              title="Recently Watched (Blog)"
-              :movies="recentlyWatchedMovies"
-              :show-view-all="true"
-              @play-trailer="openVideoModal"
-              @toggle-favorite="handleToggleFavorite"
-              @view-all="viewAllRecentlyWatched"
-            />
-
-            <!-- Top 10 This Month -->
-            <MovieSection 
-              title="Top 10 This Month"
-              :movies="topMoviesThisMonth"
-              :show-view-all="true"
-              @play-trailer="openVideoModal"
-              @toggle-favorite="handleToggleFavorite"
-              @view-all="viewAllTopMovies"
-            />
-
-            <!-- System Recommendations -->
-            <MovieSection 
-              title="Recommended for You"
-              :movies="recommendedMovies"
-              :show-view-all="true"
-              @play-trailer="openVideoModal"
-              @toggle-favorite="handleToggleFavorite"
-              @view-all="viewAllRecommended"
-            />
+              <!-- Load More Button -->
+              <div v-if="showPagination" class="text-center mt-8">
+                <button
+                  @click="loadMoreTrending"
+                  :disabled="loading"
+                  class="px-8 py-3 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed text-white rounded-lg font-semibold transition-colors flex items-center gap-2 mx-auto"
+                >
+                  <Icon 
+                    :name="loading ? 'mdi:loading' : 'mdi:plus'" 
+                    :class="['w-5 h-5', { 'animate-spin': loading }]" 
+                  />
+                  {{ loading ? 'Loading...' : 'Load More' }}
+                </button>
+              </div>
+            </div>
           </div>
 
           <!-- Sidebar Widgets -->
           <div class="space-y-6">
-            <!-- Continue Watching -->
-            <ContinueWatchingWidget 
-              ref="continueWatchingWidget"
-              @resume-watching="resumeWatching" 
-            />
+            <!-- Wishlist Widget -->
+            <div class="bg-white rounded-2xl p-6">
+              <div class="flex items-center justify-between mb-4">
+                <div class="flex items-center gap-3">
+                  <Icon name="mdi:heart" class="w-6 h-6 text-red-500" />
+                  <h3 class="text-lg font-bold text-gray-900">My Wishlist</h3>
+                </div>
+                <span class="text-sm text-gray-500">{{ wishlistItems.length }} items</span>
+              </div>
+              
+              <div v-if="wishlistItems.length > 0" class="space-y-3">
+                <div 
+                  v-for="item in wishlistItems.slice(0, 5)" 
+                  :key="`wishlist-${item.tmdb_id}`"
+                  class="flex items-center gap-3 p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors cursor-pointer"
+                  @click="playTrailer(item.trailer_url)"
+                >
+                  <img 
+                    :src="`https://image.tmdb.org/t/p/w92${item.poster_path}`"
+                    :alt="item.title"
+                    class="w-12 h-16 object-cover rounded"
+                  />
+                  <div class="flex-1 min-w-0">
+                    <h4 class="font-medium text-gray-900 truncate">{{ item.title }}</h4>
+                    <p class="text-sm text-gray-500">{{ item.type === 'movie' ? 'Movie' : 'TV Show' }}</p>
+                  </div>
+                  <button 
+                    @click.stop="removeFromWishlist(item)"
+                    class="p-1 text-gray-400 hover:text-red-500 transition-colors"
+                  >
+                    <Icon name="mdi:close" class="w-4 h-4" />
+                  </button>
+                </div>
+                
+                <button 
+                  v-if="wishlistItems.length > 5"
+                  @click="viewAllWishlist"
+                  class="w-full text-center text-blue-600 hover:text-blue-700 text-sm font-medium py-2"
+                >
+                  View all {{ wishlistItems.length }} items
+                </button>
+              </div>
+              
+              <div v-else class="text-center py-8">
+                <Icon name="mdi:heart-outline" class="w-12 h-12 text-gray-300 mx-auto mb-3" />
+                <p class="text-gray-500 text-sm">No items in your wishlist yet</p>
+                <p class="text-gray-400 text-xs mt-1">Add movies and shows from trending</p>
+              </div>
+            </div>
             
-            <!-- Paused Shows -->
-            <PausedShowsWidget 
-              ref="pausedShowsWidget"
-              @resume-show="resumeShow"
-              @status-updated="handleShowStatusUpdate"
-              @edit-show="editShow"
-            />
-            
-            <!-- Recent Activity -->
+            <!-- Stats Widget Coming Soon -->
+            <!-- TODO: Implement stats for trending content -->
+
+            <!-- Strapi Status -->
             <StrapiStatus />
           </div>
         </div>
@@ -127,8 +333,15 @@
     <VideoModal 
       :is-open="isVideoModalOpen"
       :video-url="currentVideoUrl"
-      :video-info="currentVideoInfo"
       @close="closeVideoModal"
+    />
+
+    <!-- Wishlist Modal -->
+    <WishlistModal
+      :is-open="isWishlistModalOpen"
+      :movie-data="selectedMovieForWishlist"
+      @close="closeWishlistModal"
+      @added="handleWishlistAdded"
     />
   </div>
 </template>
@@ -136,6 +349,7 @@
 <script setup lang="ts">
 // Import composables explicitly
 import { useTrending } from '~/composables/useTrending'
+import { useWishlist } from '~/composables/useWishlist'
 
 // Protect this page with authentication middleware
 definePageMeta({
@@ -144,8 +358,9 @@ definePageMeta({
 
 // Import composables
 const { user } = useAuth()
-const { getTrendingMovies } = useTrending()
+const { getAllTrending } = useTrending()
 const { getComingSoonItems, getTmdbPosterUrl } = useComingSoon()
+const { fetchWishlist, removeFromWishlistByTmdbId, wishlistItems: wishlistData } = useWishlist()
 
 // Mobile Menu State
 const showMobileMenu = ref(false)
@@ -162,6 +377,38 @@ interface VideoInfo {
 const isVideoModalOpen = ref(false)
 const currentVideoUrl = ref('')
 const currentVideoInfo = ref<VideoInfo | undefined>(undefined)
+
+// Wishlist Modal State
+const isWishlistModalOpen = ref(false)
+const selectedMovieForWishlist = ref<any>(null)
+
+// Trending State
+const loading = ref(false)
+const trendingItems = ref<any[]>([])
+const displayedItems = ref<any[]>([])
+const paginatedItems = ref<any[]>([])
+const topPicks = ref<any[]>([])
+const wishlistItems = ref<any[]>([])
+
+// Hero Section State
+const heroItems = ref<any[]>([])
+const heroIndex = ref(0)
+const currentHeroItem = ref<any>(null)
+const isAutoRotating = ref(true)
+const showVideo = ref(false)
+const heroVideoRef = ref<HTMLVideoElement | null>(null)
+let heroRotationInterval: NodeJS.Timeout | null = null
+
+// Filter State
+const searchQuery = ref('')
+const selectedType = ref('')
+const selectedPlatform = ref('')
+const sortOrder = ref('rating_desc')
+const currentPage = ref(1)
+const itemsPerPage = ref(20)
+
+// Hero pool for rotation
+const heroPool: any[] = []
 
 // Movie data interface
 interface Movie {
@@ -194,265 +441,260 @@ const convertComingSoonToMovie = (comingSoonItem: any): Movie => {
 }
 
 // Load trending data on mount
-onMounted(async () => {
-  try {
-    // Load trending movies
-    const trending = await getTrendingMovies(6) // Get 6 trending movies
-    trendingMovies.value = trending
-
-    // Load coming soon movies
-    const comingSoon = await getComingSoonItems({ limit: 6, sortBy: 'release_date' })
-    comingSoonMovies.value = comingSoon.map(convertComingSoonToMovie)
-  } catch (error) {
-    console.error('Error loading movies:', error)
-    // Fallback to hardcoded data if API fails
-    trendingMovies.value = [
-      {
-        id: 1,
-        title: "Openheimer",
-        poster:"https://www.themoviedb.org/t/p/w1280/8Gxv8gSFCU0XGDykEGv7zR1n2ua.jpg",
-        rating: 4.8,
-        genres: ["Thriller", "Detective"],
-        year: 2023,
-        duration: "2h 57m",
-        trailerUrl: "https://youtu.be/bK6ldnjE3Y0"
-      },
-      {
-        id: 2,
-        title: "The Witcher",
-        poster:"https://www.themoviedb.org/t/p/w1280/cZ0d3rtvXPVvuiX22sP79K3Hmjz.jpg",
-        rating: 4.2,
-        genres: ["Drama", "Adventure"],
-        year: 2023,
-        duration: "1h 45m",
-        trailerUrl: "https://www.youtube.com/watch?v=ndl1W4ltcmg"
-      },
-      {
-        id: 3,
-        title: "The Marvels",
-        poster:"https://www.themoviedb.org/t/p/w1280/DqK9Hag8E6bGl4W0aps2n7GJvbY.jpg",
-        rating: 3.8,
-        genres: ["Action", "Sci-Fi"],
-        year: 2023,
-        duration: "1h 45m",
-        trailerUrl: "https://www.youtube.com/watch?v=wS_qbDztgVY"
-      }
-    ]
-
-    // Fallback data for coming soon movies
-    comingSoonMovies.value = [
-      {
-        id: 4,
-        title: "Deadpool 3",
-        poster: "https://images.unsplash.com/photo-1635805737707-575885ab0820?w=400&h=600&fit=crop",
-        rating: 4.6,
-        genres: ["Action", "Comedy"],
-        year: 2024,
-        duration: "2h 10m",
-        trailerUrl: "https://www.youtube.com/watch?v=73_1biulkYk"
-      },
-      {
-        id: 5,
-        title: "Avatar 3",
-        poster: "https://images.unsplash.com/photo-1440404653325-ab127d49abc1?w=400&h=600&fit=crop",
-        rating: 4.2,
-        genres: ["Sci-Fi", "Adventure"],
-        year: 2024,
-        duration: "2h 30m",
-        trailerUrl: "https://www.youtube.com/watch?v=d9MyW72ELq0"
-      },
-      {
-        id: 6,
-        title: "Spider-Man 4",
-        poster: "https://images.unsplash.com/photo-1608889476561-6242cfdbf622?w=400&h=600&fit=crop",
-        rating: 4.5,
-        genres: ["Action", "Adventure"],
-        year: 2024,
-        duration: "2h 15m",
-        trailerUrl: "https://www.youtube.com/watch?v=JfVOs4VSpmA"
-      }
-    ]
-  }
-})
-
-const recentlyWatchedMovies = ref<Movie[]>([
-  {
-    id: 7,
-    title: "Barbie",
-    poster: "https://images.unsplash.com/photo-1578662996442-48f60103fc96?w=400&h=600&fit=crop",
-    rating: 4.1,
-    genres: ["Comedy", "Fantasy"],
-    year: 2023,
-    duration: "1h 54m",
-    trailerUrl: "https://www.youtube.com/watch?v=pBk4NYhWNMM"
-  },
-  {
-    id: 8,
-    title: "Dune: Part Two",
-    poster: "https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=400&h=600&fit=crop",
-    rating: 4.8,
-    genres: ["Sci-Fi", "Adventure"],
-    year: 2024,
-    duration: "2h 46m",
-    trailerUrl: "https://www.youtube.com/watch?v=Way9Dexny3w"
-  }
-])
-
-const topMoviesThisMonth = ref<Movie[]>([
-  {
-    id: 9,
-    title: "Guardians of the Galaxy Vol. 3",
-    poster: "https://images.unsplash.com/photo-1635805737707-575885ab0820?w=400&h=600&fit=crop",
-    rating: 4.7,
-    genres: ["Action", "Comedy"],
-    year: 2023,
-    duration: "2h 30m",
-    trailerUrl: "https://www.youtube.com/watch?v=u3V5KDHRQvk"
-  },
-  {
-    id: 10,
-    title: "Fast X",
-    poster: "https://images.unsplash.com/photo-1489599904472-c34eb5d19877?w=400&h=600&fit=crop",
-    rating: 4.0,
-    genres: ["Action", "Thriller"],
-    year: 2023,
-    duration: "2h 21m",
-    trailerUrl: "https://www.youtube.com/watch?v=aOb15GVFZYs"
-  }
-])
-
-const recommendedMovies = ref<Movie[]>([
-  {
-    id: 11,
-    title: "The Flash",
-    poster: "https://images.unsplash.com/photo-1608889476561-6242cfdbf622?w=400&h=600&fit=crop",
-    rating: 3.8,
-    genres: ["Action", "Sci-Fi"],
-    year: 2023,
-    duration: "2h 24m",
-    trailerUrl: "https://www.youtube.com/watch?v=hebWYacbdvc"
-  },
-  {
-    id: 12,
-    title: "Indiana Jones 5",
-    poster: "https://images.unsplash.com/photo-1440404653325-ab127d49abc1?w=400&h=600&fit=crop",
-    rating: 4.1,
-    genres: ["Adventure", "Action"],
-    year: 2023,
-    duration: "2h 34m",
-    trailerUrl: "https://www.youtube.com/watch?v=eQfMbSe7F2g"
-  }
-])
 
 // Event Handlers
-const handleSearch = (query: string) => {
-  console.log('Searching for:', query)
-  // Implement search functionality
-}
-
-const openVideoModal = (videoUrl: string, videoInfo?: any) => {
-  currentVideoUrl.value = videoUrl
-  currentVideoInfo.value = videoInfo
-  isVideoModalOpen.value = true
-}
-
 const closeVideoModal = () => {
   isVideoModalOpen.value = false
   currentVideoUrl.value = ''
   currentVideoInfo.value = undefined
 }
 
-const handleToggleFavorite = (movieId: number, isFavorite: boolean) => {
-  console.log(`Movie ${movieId} favorite status:`, isFavorite)
-  // Implement favorite toggle logic
+// Wishlist Integration Methods
+const addToWishlist = (movie: any) => {
+  console.log('Adding to wishlist:', movie.title)
+  selectedMovieForWishlist.value = movie
+  isWishlistModalOpen.value = true
 }
 
-const resumeWatching = (entry: any) => {
-  // Navigate to journal page with the entry selected for editing
-  navigateTo(`/journal?entry=${entry.id}`)
+const closeWishlistModal = () => {
+  isWishlistModalOpen.value = false
+  selectedMovieForWishlist.value = null
 }
 
-// View All Functions
-const viewAllTrending = () => {
-  navigateTo('/trending')
+const handleWishlistAdded = async () => {
+  // Refresh wishlist data
+  await loadWishlistData()
+  closeWishlistModal()
 }
 
-const viewAllComingSoon = () => {
-  navigateTo('/coming-soon')
+// Hero navigation methods
+const goToHeroItem = (index: number) => {
+  heroIndex.value = index
+  currentHeroItem.value = heroItems.value[index]
+  // Reset video state for new item
+  showVideo.value = false
+  nextTick(() => {
+    showVideo.value = true
+  })
 }
 
-const viewAllRecentlyWatched = () => {
-  navigateTo('/blog/recently-watched')
+const rotateHero = () => {
+  if (heroItems.value.length > 1) {
+    heroIndex.value = (heroIndex.value + 1) % heroItems.value.length
+    currentHeroItem.value = heroItems.value[heroIndex.value]
+    // Reset video state for new item
+    showVideo.value = false
+    nextTick(() => {
+      showVideo.value = true
+    })
+  }
 }
 
-const viewAllTopMovies = () => {
-  navigateTo('/movies/top-this-month')
+const toggleAutoRotation = () => {
+  isAutoRotating.value = !isAutoRotating.value
+  if (isAutoRotating.value) {
+    startHeroRotation()
+  } else {
+    stopHeroRotation()
+  }
 }
 
-const viewAllRecommended = () => {
-  navigateTo('/movies/recommended')
+const startHeroRotation = () => {
+  if (heroRotationInterval) {
+    clearInterval(heroRotationInterval)
+  }
+  heroRotationInterval = setInterval(rotateHero, 120000) // Change every 2 minutes
 }
 
-// Shuffle function for trending movies
-const shuffleTrending = () => {
+const stopHeroRotation = () => {
+  if (heroRotationInterval) {
+    clearInterval(heroRotationInterval)
+    heroRotationInterval = null
+  }
+}
+
+const onVideoLoaded = () => {
+  // Video loaded successfully
+  if (heroVideoRef.value) {
+    heroVideoRef.value.play().catch(() => {
+      // Fallback to image if autoplay fails
+      showVideo.value = false
+    })
+  }
+}
+
+const onVideoError = () => {
+  // Video failed to load, fallback to image
+  showVideo.value = false
+}
+
+// Utility function to extract YouTube video ID
+const getYouTubeVideoId = (url: string): string | null => {
+  if (!url) return null
+  
+  const regExp = /^.*((youtu.be\/)|(v\/)|(\/u\/\w\/)|(embed\/)|(watch\?))\??v?=?([^#&?]*).*/
+  const match = url.match(regExp)
+  return (match && match[7].length === 11) ? match[7] : null
+}
+
+// Check if URL is a YouTube video
+const isYouTubeUrl = (url: string): boolean => {
+  return url.includes('youtube.com') || url.includes('youtu.be')
+}
+
+// Get video source URL (for non-YouTube videos)
+const getVideoSource = (url: string): string | null => {
+  if (isYouTubeUrl(url)) {
+    return null // YouTube videos can't be played directly
+  }
+  return url
+}
+
+// Video modal methods
+const playTrailer = (trailerUrl: string) => {
+  currentVideoUrl.value = trailerUrl
+  isVideoModalOpen.value = true
+}
+
+// Filter and sorting methods
+const applyFilters = () => {
+  let filtered = [...trendingItems.value]
+
+  // Apply type filter
+  if (selectedType.value) {
+    filtered = filtered.filter(item => item.type === selectedType.value)
+  }
+
+  displayedItems.value = filtered
+  
+  // Reset to first page when filters change
+  currentPage.value = 1
+  
+  sortItems()
+  updatePagination()
+}
+
+const updatePagination = () => {
+  const startIndex = (currentPage.value - 1) * itemsPerPage.value
+  const endIndex = startIndex + itemsPerPage.value
+  paginatedItems.value = displayedItems.value.slice(startIndex, endIndex)
+}
+
+const sortItems = () => {
+  switch (sortOrder.value) {
+    case 'rating_desc':
+      displayedItems.value.sort((a, b) => (b.tmdb_rating || 0) - (a.tmdb_rating || 0))
+      break
+    case 'rating_asc':
+      displayedItems.value.sort((a, b) => (a.tmdb_rating || 0) - (b.tmdb_rating || 0))
+      break
+    case 'trending_rank':
+      displayedItems.value.sort((a, b) => (a.trending_rank || 999) - (b.trending_rank || 999))
+      break
+    case 'release_date':
+      displayedItems.value.sort((a, b) => {
+        const dateA = new Date(a.release_date || '1900-01-01').getTime()
+        const dateB = new Date(b.release_date || '1900-01-01').getTime()
+        return dateB - dateA
+      })
+      break
+    case 'title':
+      displayedItems.value.sort((a, b) => a.title.localeCompare(b.title))
+      break
+  }
+  
+  // Update pagination after sorting
+  updatePagination()
+}
+
+const shuffleTopPicks = () => {
   // Fisher-Yates shuffle algorithm
-  const shuffled = [...trendingMovies.value]
+  const shuffled = [...topPicks.value]
   for (let i = shuffled.length - 1; i > 0; i--) {
     const j = Math.floor(Math.random() * (i + 1));
     [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]]
   }
-  trendingMovies.value = shuffled
+  topPicks.value = shuffled
 }
 
-// Journal Integration Methods
-const journalWidget = ref<{ refetch?: () => void } | null>(null)
-const continueWatchingWidget = ref<{ refetch?: () => void } | null>(null)
-const pausedShowsWidget = ref<{ refetch?: () => void } | null>(null)
-
-const openJournalModal = (movie: any) => {
-  console.log('Adding to journal:', movie.title)
-  // Navigate to journal page to add entry for this movie
-  navigateTo('/journal?add=true&movie=' + encodeURIComponent(movie.title))
+const loadMoreTrending = () => {
+  // Increase items per page to show more
+  itemsPerPage.value += 20
+  updatePagination()
 }
 
-const handleJournalUpdate = (entry: any) => {
-  console.log('Journal entry updated:', entry)
-  // Refresh all widgets to show latest data
-  if (journalWidget.value?.refetch) {
-    journalWidget.value.refetch()
-  }
-  if (continueWatchingWidget.value?.refetch) {
-    continueWatchingWidget.value.refetch()
-  }
-  if (pausedShowsWidget.value?.refetch) {
-    pausedShowsWidget.value.refetch()
-  }
-}
+// Computed properties
+const showPagination = computed(() => {
+  return displayedItems.value.length > itemsPerPage.value
+})
 
-const handleStatusChange = (status: string) => {
-  console.log('Journal status filter changed to:', status)
-  // Update UI based on status filter
-}
+// Data fetching
+const fetchTrendingItems = async () => {
+  try {
+    loading.value = true
+    
+    // Fetch all trending items without pagination
+    const response = await getAllTrending()
+    
+    trendingItems.value = response.data
+    heroPool.push(...response.data)
+    
+    // Set hero items from first few trending items
+    if (response.data.length > 0) {
+      heroItems.value = heroPool.slice(0, 5)
+      currentHeroItem.value = heroItems.value[0]
+      
+      // Create top picks from highest-rated trending items
+      const sortedByRating = [...response.data].sort((a, b) => (b.tmdb_rating || 0) - (a.tmdb_rating || 0))
+      topPicks.value = sortedByRating.slice(0, 8)
+    }
 
-// Paused Shows Methods
-const resumeShow = (show: any) => {
-  // Navigate to journal page with the entry selected for editing
-  navigateTo(`/journal?entry=${show.id}`)
-}
-
-const handleShowStatusUpdate = (data: any) => {
-  console.log('Show status updated:', data)
-  // Refresh all relevant widgets when a show status changes
-  if (pausedShowsWidget.value?.refetch) {
-    pausedShowsWidget.value.refetch()
-  }
-  if (journalWidget.value?.refetch) {
-    journalWidget.value.refetch()
+    applyFilters()
+  } catch (error) {
+    console.error('Error fetching trending items:', error)
+  } finally {
+    loading.value = false
   }
 }
 
-const editShow = (show: any) => {
-  // Navigate to journal page with the entry selected for editing
-  navigateTo(`/journal?entry=${show.id}`)
+// Wishlist management
+const loadWishlistData = async () => {
+  try {
+    await fetchWishlist()
+    wishlistItems.value = [...(wishlistData.value || [])]
+  } catch (error) {
+    console.error('Error loading wishlist:', error)
+    wishlistItems.value = []
+  }
 }
+
+const removeFromWishlist = async (item: any) => {
+  try {
+    console.log('Removing from wishlist:', item.title)
+    await removeFromWishlistByTmdbId(item.tmdb_id)
+    await loadWishlistData()
+  } catch (error) {
+    console.error('Error removing from wishlist:', error)
+  }
+}
+
+const viewAllWishlist = () => {
+  navigateTo('/wishlist')
+}
+
+// Initialize
+onMounted(async () => {
+  await Promise.all([
+    fetchTrendingItems(),
+    loadWishlistData()
+  ])
+  
+  // Start hero rotation
+  startHeroRotation()
+})
+
+// Cleanup on unmount
+onUnmounted(() => {
+  stopHeroRotation()
+})
 </script>

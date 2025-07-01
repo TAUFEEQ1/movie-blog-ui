@@ -2,20 +2,12 @@
   <header class="flex items-center justify-between mb-8">
     <!-- Page Title -->
     <div>
-      <h1 class="text-2xl font-bold text-gray-900">Dashboard</h1>
-      <p class="text-gray-600">Welcome back! Here's what's happening with your movies and shows.</p>
+      <h1 class="text-2xl font-bold text-gray-900">TrendingNow</h1>
+      <p class="text-gray-600">Discover what's trending in movies and TV shows right now.</p>
     </div>
 
-    <!-- Search and Notifications -->
+    <!-- Notifications and User Profile -->
     <div class="flex items-center gap-4">
-      <!-- Search Icon -->
-      <button 
-        @click="openSearchModal"
-        class="p-3 hover:bg-gray-100 rounded-xl transition-colors group"
-        title="Search movies and TV shows"
-      >
-        <Icon name="mdi:magnify" class="w-6 h-6 text-gray-600 group-hover:text-blue-600 transition-colors" />
-      </button>
 
       <!-- Notifications -->
       <button class="relative p-2 hover:bg-gray-100 rounded-xl transition-colors">
@@ -46,35 +38,12 @@
         </div>
       </div>
     </div>
-
-    <!-- Search Modal -->
-    <SearchModal 
-      :is-open="isSearchModalOpen"
-      @close="closeSearchModal"
-      @search="handleSearch"
-    />
   </header>
 </template>
 
 <script setup lang="ts">
 // State
 const showUserMenu = ref(false)
-const isSearchModalOpen = ref(false)
-
-const emit = defineEmits(['search'])
-
-// Search modal methods
-const openSearchModal = () => {
-  isSearchModalOpen.value = true
-}
-
-const closeSearchModal = () => {
-  isSearchModalOpen.value = false
-}
-
-const handleSearch = (query: string) => {
-  emit('search', query)
-}
 
 // Close user menu when clicking outside
 const closeUserMenu = () => {
