@@ -83,7 +83,7 @@ const navigationItems: NavigationItem[] = [
   { name: 'Trending Now', path: '/', icon: 'mdi:fire' },
   { name: 'Search & Filter', path: '/search', icon: 'mdi:magnify' },
   { name: 'Top Picks', path: '/top-picks', icon: 'mdi:trophy' },
-  { name: 'Wishlist', path: '/wishlist', icon: 'mdi:playlist-plus' },
+  { name: 'Watchlist', path: '/watchlist', icon: 'mdi:playlist-plus' },
   { name: 'Coming Soon', path: '/coming-soon', icon: 'mdi:calendar-clock' },
   { name: 'Settings', path: '/settings', icon: 'mdi:cog' }
 ]
