@@ -644,15 +644,32 @@ const fetchTrendingItems = async () => {
     if (response.data.length > 0) {
       heroItems.value = heroPool.slice(0, 5)
       currentHeroItem.value = heroItems.value[0]
-      
-      // Create top picks from highest-rated trending items
-      const sortedByRating = [...response.data].sort((a, b) => (b.tmdb_rating || 0) - (a.tmdb_rating || 0))
-      topPicks.value = sortedByRating.slice(0, 8)
     }
 
     applyFilters()
   } catch (error) {
     console.error('Error fetching trending items:', error)
+  } finally {
+    loading.value = false
+  }
+}
+
+// Patch TrendingItem type for runtime fields
+interface TrendingItemWithScore extends TrendingItem {
+  combined_score?: number
+}
+
+// Fetch all trending items with authentication for Top Picks
+const fetchTopPicks = async () => {
+  try {
+    loading.value = true
+    // Always use authenticated request for top picks
+    const response = await getAllTrending({ forceApi: true })
+    // Sort by combined_score if present, else fallback to tmdb_rating
+  
+    topPicks.value = response.data.slice(0,8);
+  } catch (error) {
+    console.error('Error fetching top picks:', error)
   } finally {
     loading.value = false
   }
@@ -687,6 +704,7 @@ const viewAllWatchlist = () => {
 onMounted(async () => {
   await Promise.all([
     fetchTrendingItems(),
+    fetchTopPicks(),
     loadWatchlistData(),
   ])
   
