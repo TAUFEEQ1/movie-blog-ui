@@ -1,6 +1,7 @@
 export interface WishlistItem {
   id: number
   tmdb_id: number
+  documentId: string // Unique identifier for Strapi
   title: string
   type: 'movie' | 'tv'
   poster_path?: string
@@ -131,16 +132,16 @@ export const useWishlist = () => {
   }
 
   // Remove item from wishlist by ID
-  const removeFromWishlist = async (id: number) => {
+  const removeFromWishlist = async (documentId: string) => {
     try {
       isLoading.value = true
       error.value = ''
 
-      await apiCall(`/wishlists/${id}`, {
+      await apiCall(`/wishlists/${documentId}`, {
         method: 'DELETE'
       })
 
-      wishlistItems.value = wishlistItems.value.filter(item => item.id !== id)
+      wishlistItems.value = wishlistItems.value.filter(item => item.documentId !== documentId)
     } catch (err: any) {
       error.value = err.message || 'Failed to remove item from wishlist'
       throw err

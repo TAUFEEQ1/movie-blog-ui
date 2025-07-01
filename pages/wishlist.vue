@@ -272,7 +272,7 @@ const filteredItems = computed(() => {
 // Methods
 const removeItem = async (item: WishlistItem) => {
   try {
-    await removeFromWishlist(item.id)
+    await removeFromWishlist(item.documentId)
   } catch (error) {
     console.error('Error removing item:', error)
   }
