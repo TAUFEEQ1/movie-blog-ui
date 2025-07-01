@@ -68,7 +68,7 @@
                     Status
                   </label>
                   <select
-                    v-model="form.wish_status"
+                    v-model="form.watch_status"
                     class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                   >
                     <option value="want_to_watch">Want to Watch</option>
@@ -153,7 +153,7 @@ const { addToWatchlist } = useWatchlist()
 // Form state
 const form = reactive({
   priority: 'medium' as 'low' | 'medium' | 'high',
-  wish_status: 'want_to_watch' as 'want_to_watch' | 'watching' | 'completed' | 'on_hold' | 'dropped',
+  watch_status: 'want_to_watch' as 'want_to_watch' | 'watching' | 'completed' | 'on_hold' | 'dropped',
   notes: ''
 })
 
@@ -168,7 +168,7 @@ const closeModal = () => {
 
 const resetForm = () => {
   form.priority = 'medium'
-  form.wish_status = 'want_to_watch'
+  form.watch_status = 'want_to_watch'
   form.notes = ''
 }
 
@@ -189,7 +189,7 @@ const handleSubmit = async () => {
       overview: props.movieData.overview,
       genres: props.movieData.genres,
       priority: form.priority,
-      wish_status: form.wish_status,
+      watch_status: form.watch_status,
       notes: form.notes.trim() || undefined
       // tags: selectedTags.value.map(tag => tag.id) // Shelved for now
     }

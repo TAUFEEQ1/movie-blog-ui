@@ -450,9 +450,9 @@ const closeVideoModal = () => {
   currentVideoInfo.value = undefined
 }
 
-// Wishlist Integration Methods
+// Watchlist Integration Methods
 const addToWatchlist = (movie: any) => {
-  console.log('Adding to wishlist:', movie.title)
+  console.log('Adding to watchlist:', movie.title)
   selectedMovieForWatchlist.value = movie
   isWatchlistModalOpen.value = true
 }
