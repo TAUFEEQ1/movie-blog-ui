@@ -81,18 +81,6 @@
           </span>
         </div>
 
-        <!-- Tags -->
-        <div v-if="item.tags && item.tags.length > 0" class="flex flex-wrap gap-1 mb-2">
-          <span
-            v-for="tag in item.tags"
-            :key="tag.id"
-            class="inline-block px-2 py-1 text-xs font-medium text-white rounded-full"
-            :style="{ backgroundColor: tag.color }"
-          >
-            {{ tag.name }}
-          </span>
-        </div>
-
         <!-- Notes and Date -->
         <div class="text-sm text-gray-600">
           <p v-if="item.notes" class="mb-1">{{ item.notes }}</p>

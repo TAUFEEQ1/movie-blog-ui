@@ -79,24 +79,6 @@
         </div>
       </div>
 
-      <!-- Tags -->
-      <div v-if="item.tags && item.tags.length > 0" class="flex flex-wrap gap-1 mb-2">
-        <span
-          v-for="tag in item.tags.slice(0, 3)"
-          :key="tag.id"
-          class="inline-block px-2 py-1 text-xs font-medium text-white rounded-full"
-          :style="{ backgroundColor: tag.color }"
-        >
-          {{ tag.name }}
-        </span>
-        <span
-          v-if="item.tags.length > 3"
-          class="inline-block px-2 py-1 text-xs font-medium text-gray-600 bg-gray-200 rounded-full"
-        >
-          +{{ item.tags.length - 3 }}
-        </span>
-      </div>
-
       <!-- Notes -->
       <p
         v-if="item.notes"

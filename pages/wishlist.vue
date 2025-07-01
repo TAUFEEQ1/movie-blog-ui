@@ -92,15 +92,11 @@
               <div class="text-2xl font-bold text-red-600">{{ stats.highPriority }}</div>
               <div class="text-sm text-gray-600">High Priority</div>
             </div>
-            <div class="bg-white rounded-xl p-4 shadow-sm">
-              <div class="text-2xl font-bold text-gray-600">{{ userTags.length }}</div>
-              <div class="text-sm text-gray-600">Tags</div>
-            </div>
           </div>
 
           <!-- Filters -->
           <div class="bg-white rounded-xl p-6 shadow-sm">
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               <!-- Search -->
               <div>
                 <label class="block text-sm font-medium text-gray-700 mb-2">Search</label>
@@ -154,39 +150,6 @@
                   <option value="low">Low</option>
                 </select>
               </div>
-            </div>
-
-            <!-- Tag Filter -->
-            <div>
-              <label class="block text-sm font-medium text-gray-700 mb-2">Filter by Tags</label>
-              <div class="flex flex-wrap gap-2">
-                <button
-                  v-for="tag in userTags"
-                  :key="tag.id"
-                  @click="toggleTagFilter(tag.id)"
-                  :class="[
-                    'inline-flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-all',
-                    filters.tags.includes(tag.id)
-                      ? 'text-white shadow-md transform scale-105'
-                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                  ]"
-                  :style="filters.tags.includes(tag.id) ? { backgroundColor: tag.color } : {}"
-                >
-                  <div
-                    v-if="!filters.tags.includes(tag.id)"
-                    class="w-3 h-3 rounded-full"
-                    :style="{ backgroundColor: tag.color }"
-                  ></div>
-                  {{ tag.name }}
-                </button>
-              </div>
-              <button
-                v-if="filters.tags.length > 0"
-                @click="filters.tags = []"
-                class="mt-2 text-sm text-blue-600 hover:text-blue-800"
-              >
-                Clear tag filters
-              </button>
             </div>
           </div>
         </div>
@@ -273,10 +236,8 @@ import type { WishlistItem } from '~/composables/useWishlist'
 
 const { 
   wishlistItems, 
-  userTags, 
   isLoading, 
   fetchWishlist, 
-  fetchTags, 
   removeFromWishlist,
   updateWishlistItem,
   getWishlistStats,
@@ -293,8 +254,7 @@ const filters = reactive({
   search: '',
   wish_status: '',
   type: '',
-  priority: '',
-  tags: [] as number[]
+  priority: ''
 })
 
 // Computed
@@ -305,21 +265,11 @@ const filteredItems = computed(() => {
     wish_status: filters.wish_status || undefined,
     type: filters.type || undefined,
     priority: filters.priority || undefined,
-    tags: filters.tags.length > 0 ? filters.tags : undefined,
     search: filters.search || undefined
   })
 })
 
 // Methods
-const toggleTagFilter = (tagId: number) => {
-  const index = filters.tags.indexOf(tagId)
-  if (index > -1) {
-    filters.tags.splice(index, 1)
-  } else {
-    filters.tags.push(tagId)
-  }
-}
-
 const removeItem = async (item: WishlistItem) => {
   try {
     await removeFromWishlist(item.id)
@@ -355,10 +305,7 @@ const openEditModal = (item: WishlistItem) => {
 
 // Load data on mount
 onMounted(async () => {
-  await Promise.all([
-    fetchWishlist(),
-    fetchTags()
-  ])
+  await fetchWishlist()
 })
 
 // Save view mode preference

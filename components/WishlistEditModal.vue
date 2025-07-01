@@ -91,77 +91,6 @@
                   >
                 </div>
 
-                <!-- Tags -->
-                <div>
-                  <label class="block text-sm font-medium text-gray-700 mb-2">
-                    Tags
-                  </label>
-                  
-                  <!-- Tag Input -->
-                  <div class="relative mb-3">
-                    <input
-                      v-model="tagSearch"
-                      type="text"
-                      placeholder="Search or create tags..."
-                      class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                      @input="handleTagSearch"
-                      @keydown.enter.prevent="handleTagEnter"
-                    >
-                    
-                    <!-- Tag Suggestions -->
-                    <div
-                      v-if="showTagSuggestions && (filteredTags.length > 0 || canCreateNewTag)"
-                      class="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-40 overflow-y-auto"
-                    >
-                      <!-- Existing Tags -->
-                      <button
-                        v-for="tag in filteredTags"
-                        :key="tag.id"
-                        type="button"
-                        class="w-full px-3 py-2 text-left hover:bg-gray-50 flex items-center gap-2"
-                        @click="selectTag(tag)"
-                      >
-                        <div
-                          class="w-3 h-3 rounded-full"
-                          :style="{ backgroundColor: tag.color }"
-                        ></div>
-                        <span>{{ tag.name }}</span>
-                        <span class="ml-auto text-xs text-gray-500">({{ tag.usage_count }})</span>
-                      </button>
-                      
-                      <!-- Create New Tag -->
-                      <button
-                        v-if="canCreateNewTag"
-                        type="button"
-                        class="w-full px-3 py-2 text-left hover:bg-gray-50 flex items-center gap-2 text-blue-600 border-t border-gray-200"
-                        @click="createNewTag"
-                      >
-                        <Icon name="mdi:plus" class="w-4 h-4" />
-                        <span>Create "{{ tagSearch }}"</span>
-                      </button>
-                    </div>
-                  </div>
-
-                  <!-- Selected Tags -->
-                  <div v-if="selectedTags.length > 0" class="flex flex-wrap gap-2 mb-3">
-                    <span
-                      v-for="tag in selectedTags"
-                      :key="tag.id"
-                      class="inline-flex items-center gap-1 px-3 py-1 rounded-full text-sm font-medium text-white"
-                      :style="{ backgroundColor: tag.color }"
-                    >
-                      {{ tag.name }}
-                      <button
-                        type="button"
-                        @click="removeTag(tag.id)"
-                        class="ml-1 hover:bg-white hover:bg-opacity-20 rounded-full p-0.5"
-                      >
-                        <Icon name="mdi:close" class="w-3 h-3" />
-                      </button>
-                    </span>
-                  </div>
-                </div>
-
                 <!-- Notes -->
                 <div>
                   <label class="block text-sm font-medium text-gray-700 mb-2">
@@ -206,7 +135,8 @@
 </template>
 
 <script setup lang="ts">
-import type { WishlistItem, Tag } from '~/composables/useWishlist'
+import type { WishlistItem } from '~/composables/useWishlist'
+// import type { Tag } from '~/composables/useWishlist' // Shelved for now
 
 interface Props {
   isOpen: boolean
@@ -221,7 +151,7 @@ interface Emits {
 const props = defineProps<Props>()
 const emit = defineEmits<Emits>()
 
-const { updateWishlistItem, createTag, searchTags, userTags, fetchTags } = useWishlist()
+const { updateWishlistItem } = useWishlist()
 
 // Form state
 const form = reactive({
@@ -231,86 +161,12 @@ const form = reactive({
   watched_date: props.item.watched_date || ''
 })
 
-// Tag management
-const tagSearch = ref('')
-const selectedTags = ref<Tag[]>([...(props.item.tags || [])])
-const filteredTags = ref<Tag[]>([])
-const showTagSuggestions = ref(false)
+// Loading state
 const loading = ref(false)
-
-// Computed
-const canCreateNewTag = computed(() => {
-  return tagSearch.value.trim().length > 0 && 
-         !filteredTags.value.some(tag => tag.name.toLowerCase() === tagSearch.value.toLowerCase()) &&
-         !selectedTags.value.some(tag => tag.name.toLowerCase() === tagSearch.value.toLowerCase())
-})
 
 // Methods
 const closeModal = () => {
   emit('close')
-}
-
-const handleTagSearch = async () => {
-  if (tagSearch.value.trim().length === 0) {
-    filteredTags.value = []
-    showTagSuggestions.value = false
-    return
-  }
-
-  try {
-    const results = await searchTags(tagSearch.value)
-    filteredTags.value = results.filter(tag => 
-      !selectedTags.value.some(selected => selected.id === tag.id)
-    )
-    showTagSuggestions.value = true
-  } catch (error) {
-    console.error('Error searching tags:', error)
-  }
-}
-
-const handleTagEnter = () => {
-  if (canCreateNewTag.value) {
-    createNewTag()
-  } else if (filteredTags.value.length > 0) {
-    selectTag(filteredTags.value[0])
-  }
-}
-
-const selectTag = (tag: Tag) => {
-  if (!selectedTags.value.some(selected => selected.id === tag.id)) {
-    selectedTags.value.push(tag)
-  }
-  tagSearch.value = ''
-  filteredTags.value = []
-  showTagSuggestions.value = false
-}
-
-const createNewTag = async () => {
-  try {
-    const newTag = await createTag({
-      name: tagSearch.value.trim(),
-      color: generateRandomColor()
-    })
-    
-    selectedTags.value.push(newTag)
-    tagSearch.value = ''
-    filteredTags.value = []
-    showTagSuggestions.value = false
-  } catch (error) {
-    console.error('Error creating tag:', error)
-  }
-}
-
-const removeTag = (tagId: number) => {
-  selectedTags.value = selectedTags.value.filter(tag => tag.id !== tagId)
-}
-
-const generateRandomColor = () => {
-  const colors = [
-    '#3B82F6', '#EF4444', '#10B981', '#F59E0B', '#8B5CF6',
-    '#EC4899', '#06B6D4', '#84CC16', '#F97316', '#6366F1'
-  ]
-  return colors[Math.floor(Math.random() * colors.length)]
 }
 
 const handleSubmit = async () => {
@@ -321,8 +177,8 @@ const handleSubmit = async () => {
       priority: form.priority,
       wish_status: form.wish_status,
       notes: form.notes.trim() || undefined,
-      watched_date: form.watched_date || undefined,
-      tags: selectedTags.value.map(tag => tag.id)
+      watched_date: form.watched_date || undefined
+      // tags: selectedTags.value.map(tag => tag.id) // Shelved for now
     }
 
     const updatedItem = await updateWishlistItem(props.item.id, updates)
@@ -335,19 +191,12 @@ const handleSubmit = async () => {
   }
 }
 
-// Load tags when modal opens
-watch(() => props.isOpen, async (isOpen) => {
-  if (isOpen) {
-    await fetchTags()
-  }
-})
-
 // Reset form when item changes
 watch(() => props.item, (newItem) => {
   form.priority = newItem.priority
   form.wish_status = newItem.wish_status
   form.notes = newItem.notes || ''
   form.watched_date = newItem.watched_date || ''
-  selectedTags.value = [...(newItem.tags || [])]
+  // selectedTags.value = [...(newItem.tags || [])] // Shelved for now
 }, { immediate: true })
 </script>

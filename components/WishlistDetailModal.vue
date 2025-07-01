@@ -79,21 +79,6 @@
                 <span class="text-sm text-gray-900">{{ formatDate(item.watched_date) }}</span>
               </div>
             </div>
-
-            <!-- Tags -->
-            <div v-if="item.tags && item.tags.length > 0" class="mt-4">
-              <h4 class="text-sm font-medium text-gray-700 mb-2">Tags</h4>
-              <div class="flex flex-wrap gap-2">
-                <span
-                  v-for="tag in item.tags"
-                  :key="tag.id"
-                  class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium text-white"
-                  :style="{ backgroundColor: tag.color }"
-                >
-                  {{ tag.name }}
-                </span>
-              </div>
-            </div>
           </div>
 
           <!-- Right Column: Details -->

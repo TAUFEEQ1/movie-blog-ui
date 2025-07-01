@@ -15,7 +15,7 @@ export interface WishlistItem {
   date_added: string
   watched_date?: string
   is_active: boolean
-  tags?: Tag[]
+  // tags?: Tag[] // Shelved for now
   user?: any
 }
 
@@ -42,7 +42,7 @@ export interface AddToWishlistData {
   notes?: string
   priority?: 'low' | 'medium' | 'high'
   wish_status?: 'want_to_watch' | 'watching' | 'completed' | 'on_hold' | 'dropped'
-  tags?: number[]
+  // tags?: number[] // Shelved for now
 }
 
 export const useWishlist = () => {
@@ -85,7 +85,7 @@ export const useWishlist = () => {
       isLoading.value = true
       error.value = ''
       
-      const response = await apiCall('/wishlists?populate=tags') as any
+      const response = await apiCall('/wishlists') as any
       wishlistItems.value = response.data || []
     } catch (err: any) {
       error.value = err.message || 'Failed to fetch wishlist'
@@ -276,7 +276,7 @@ export const useWishlist = () => {
     wish_status?: string
     type?: string
     priority?: string
-    tags?: number[]
+    // tags?: number[] // Shelved for now
     search?: string
   }) => {
     let filtered = [...wishlistItems.value]
@@ -293,11 +293,12 @@ export const useWishlist = () => {
       filtered = filtered.filter(item => item.priority === filters.priority)
     }
 
-    if (filters.tags && filters.tags.length > 0) {
-      filtered = filtered.filter(item => 
-        item.tags?.some(tag => filters.tags!.includes(tag.id))
-      )
-    }
+    // Tags filtering shelved for now
+    // if (filters.tags && filters.tags.length > 0) {
+    //   filtered = filtered.filter(item => 
+    //     item.tags?.some(tag => filters.tags!.includes(tag.id))
+    //   )
+    // }
 
     if (filters.search) {
       const searchTerm = filters.search.toLowerCase()
@@ -313,20 +314,20 @@ export const useWishlist = () => {
   return {
     // State
     wishlistItems: readonly(wishlistItems),
-    userTags: readonly(userTags),
+    // userTags: readonly(userTags), // Shelved for now
     isLoading: readonly(isLoading),
     error: readonly(error),
     
     // Actions
     fetchWishlist,
-    fetchTags,
+    // fetchTags, // Shelved for now
     addToWishlist,
     removeFromWishlist,
     removeFromWishlistByTmdbId,
     checkInWishlist,
     updateWishlistItem,
-    createTag,
-    searchTags,
+    // createTag, // Shelved for now
+    // searchTags, // Shelved for now
     
     // Computed
     getWishlistStats,
