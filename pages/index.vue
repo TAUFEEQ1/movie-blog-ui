@@ -126,7 +126,7 @@
                 </button>
 
                 <button 
-                  @click="addToWishlist(currentHeroItem)"
+                  @click="addToWatchlist(currentHeroItem)"
                   class="bg-blue-600 bg-opacity-20 text-white px-6 py-3 rounded-xl font-semibold hover:bg-opacity-30 transition-colors flex items-center gap-2 backdrop-blur-sm"
                 >
                   <Icon name="mdi:heart-outline" class="w-5 h-5" />
@@ -212,7 +212,7 @@
                   :key="`top-pick-${item.tmdb_id}`"
                   :item="item"
                   @play-trailer="playTrailer"
-                  @add-to-wishlist="addToWishlist"
+                  @add-to-wishlist="addToWatchlist"
                 />
               </div>
             </div>
@@ -246,7 +246,7 @@
                   :key="`${item.tmdb_id}-${item.type}`"
                   :item="item"
                   @play-trailer="playTrailer"
-                  @add-to-wishlist="addToWishlist"
+                  @add-to-wishlist="addToWatchlist"
                 />
               </div>
 
@@ -336,12 +336,13 @@
       @close="closeVideoModal"
     />
 
-    <!-- Wishlist Modal -->
-    <WishlistModal
-      :is-open="isWishlistModalOpen"
-      :movie-data="selectedMovieForWishlist"
-      @close="closeWishlistModal"
-      @added="handleWishlistAdded"
+
+    <!-- Watchlist Modal -->
+    <WatchlistModal
+      :is-open="isWatchlistModalOpen"
+      :movie-data="selectedMovieForWatchlist"
+      @close="closeWatchlistModal"
+      @added="handleWatchlistAdded"
     />
   </div>
 </template>
@@ -379,8 +380,8 @@ const currentVideoUrl = ref('')
 const currentVideoInfo = ref<VideoInfo | undefined>(undefined)
 
 // Wishlist Modal State
-const isWishlistModalOpen = ref(false)
-const selectedMovieForWishlist = ref<any>(null)
+const isWatchlistModalOpen = ref(false)
+const selectedMovieForWatchlist = ref<any>(null)
 
 // Trending State
 const loading = ref(false)
@@ -450,21 +451,21 @@ const closeVideoModal = () => {
 }
 
 // Wishlist Integration Methods
-const addToWishlist = (movie: any) => {
+const addToWatchlist = (movie: any) => {
   console.log('Adding to wishlist:', movie.title)
-  selectedMovieForWishlist.value = movie
-  isWishlistModalOpen.value = true
+  selectedMovieForWatchlist.value = movie
+  isWatchlistModalOpen.value = true
 }
 
-const closeWishlistModal = () => {
-  isWishlistModalOpen.value = false
-  selectedMovieForWishlist.value = null
+const closeWatchlistModal = () => {
+  isWatchlistModalOpen.value = false
+  selectedMovieForWatchlist.value = null
 }
 
-const handleWishlistAdded = async () => {
-  // Refresh wishlist data
+const handleWatchlistAdded = async () => {
+  // Refresh watchlist data
   await loadWatchlistData()
-  closeWishlistModal()
+  closeWatchlistModal()
 }
 
 // Hero navigation methods
