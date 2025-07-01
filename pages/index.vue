@@ -305,7 +305,7 @@
                 
                 <button 
                   v-if="wishlistItems.length > 5"
-                  @click="viewAllWishlist"
+                  @click="viewAllWatchlist"
                   class="w-full text-center text-blue-600 hover:text-blue-700 text-sm font-medium py-2"
                 >
                   View all {{ wishlistItems.length }} items
@@ -349,7 +349,7 @@
 <script setup lang="ts">
 // Import composables explicitly
 import { useTrending } from '~/composables/useTrending'
-import { useWishlist } from '~/composables/useWishlist'
+import { useWatchlist } from '~/composables/useWatchlist'
 
 // Protect this page with authentication middleware
 definePageMeta({
@@ -360,7 +360,7 @@ definePageMeta({
 const { user } = useAuth()
 const { getAllTrending } = useTrending()
 const { getComingSoonItems, getTmdbPosterUrl } = useComingSoon()
-const { fetchWishlist, removeFromWishlistByTmdbId, wishlistItems: wishlistData } = useWishlist()
+const { fetchWatchlist, removeFromWatchlistByTmdbId, watchlistItems: watchlistData } = useWatchlist()
 
 // Mobile Menu State
 const showMobileMenu = ref(false)
@@ -463,7 +463,7 @@ const closeWishlistModal = () => {
 
 const handleWishlistAdded = async () => {
   // Refresh wishlist data
-  await loadWishlistData()
+  await loadWatchlistData()
   closeWishlistModal()
 }
 
@@ -658,10 +658,10 @@ const fetchTrendingItems = async () => {
 }
 
 // Wishlist management
-const loadWishlistData = async () => {
+const loadWatchlistData = async () => {
   try {
-    await fetchWishlist()
-    wishlistItems.value = [...(wishlistData.value || [])]
+    await fetchWatchlist()
+    wishlistItems.value = [...(watchlistData.value || [])]
   } catch (error) {
     console.error('Error loading wishlist:', error)
     wishlistItems.value = []
@@ -671,22 +671,22 @@ const loadWishlistData = async () => {
 const removeFromWishlist = async (item: any) => {
   try {
     console.log('Removing from wishlist:', item.title)
-    await removeFromWishlistByTmdbId(item.tmdb_id)
-    await loadWishlistData()
+    await removeFromWatchlistByTmdbId(item.tmdb_id)
+    await loadWatchlistData()
   } catch (error) {
     console.error('Error removing from wishlist:', error)
   }
 }
 
-const viewAllWishlist = () => {
-  navigateTo('/wishlist')
+const viewAllWatchlist = () => {
+  navigateTo('/watchlist')
 }
 
 // Initialize
 onMounted(async () => {
   await Promise.all([
     fetchTrendingItems(),
-    loadWishlistData()
+    loadWatchlistData(),
   ])
   
   // Start hero rotation

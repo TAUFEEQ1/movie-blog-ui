@@ -24,23 +24,23 @@
           <div class="sm:flex sm:items-start">
             <div class="mt-3 text-center sm:mt-0 sm:text-left w-full">
               <h3 class="text-lg leading-6 font-medium text-gray-900 mb-4" id="modal-title">
-                Add to Wishlist
+                Edit Watchlist Item
               </h3>
 
               <!-- Movie/Show Info -->
-              <div v-if="movieData" class="flex gap-4 mb-6 p-4 bg-gray-50 rounded-xl">
+              <div class="flex gap-4 mb-6 p-4 bg-gray-50 rounded-xl">
                 <img
-                  v-if="movieData.poster_path"
-                  :src="`https://image.tmdb.org/t/p/w200${movieData.poster_path}`"
-                  :alt="movieData.title"
+                  v-if="item.poster_path"
+                  :src="`https://image.tmdb.org/t/p/w200${item.poster_path}`"
+                  :alt="item.title"
                   class="w-16 h-24 object-cover rounded-lg shadow-sm"
                 >
                 <div class="flex-1">
-                  <h4 class="font-semibold text-gray-900 mb-1">{{ movieData.title }}</h4>
-                  <p class="text-sm text-gray-600 mb-2">{{ movieData.type === 'movie' ? 'Movie' : 'TV Show' }}</p>
-                  <div v-if="movieData.tmdb_rating" class="flex items-center gap-1">
+                  <h4 class="font-semibold text-gray-900 mb-1">{{ item.title }}</h4>
+                  <p class="text-sm text-gray-600 mb-2">{{ item.type === 'movie' ? 'Movie' : 'TV Show' }}</p>
+                  <div v-if="item.tmdb_rating" class="flex items-center gap-1">
                     <Icon name="mdi:star" class="w-4 h-4 text-yellow-500" />
-                    <span class="text-sm text-gray-700">{{ movieData.tmdb_rating.toFixed(1) }}</span>
+                    <span class="text-sm text-gray-700">{{ item.tmdb_rating.toFixed(1) }}</span>
                   </div>
                 </div>
               </div>
@@ -68,7 +68,7 @@
                     Status
                   </label>
                   <select
-                    v-model="form.wish_status"
+                    v-model="form.watch_status"
                     class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                   >
                     <option value="want_to_watch">Want to Watch</option>
@@ -79,10 +79,22 @@
                   </select>
                 </div>
 
+                <!-- Watched Date (only show if completed) -->
+                <div v-if="form.watch_status === 'completed'">
+                  <label class="block text-sm font-medium text-gray-700 mb-2">
+                    Date Completed
+                  </label>
+                  <input
+                    v-model="form.watched_date"
+                    type="date"
+                    class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  >
+                </div>
+
                 <!-- Notes -->
                 <div>
                   <label class="block text-sm font-medium text-gray-700 mb-2">
-                    Notes (Optional)
+                    Notes
                   </label>
                   <textarea
                     v-model="form.notes"
@@ -108,9 +120,9 @@
                   >
                     <span v-if="loading" class="flex items-center justify-center gap-2">
                       <Icon name="mdi:loading" class="w-4 h-4 animate-spin" />
-                      Adding...
+                      Updating...
                     </span>
-                    <span v-else>Add to Wishlist</span>
+                    <span v-else>Update Item</span>
                   </button>
                 </div>
               </form>
@@ -123,38 +135,29 @@
 </template>
 
 <script setup lang="ts">
-// import type { Tag } from '~/composables/useWishlist' // Shelved for now
+import type { WatchlistItem } from '~/composables/useWatchlist'
 
 interface Props {
   isOpen: boolean
-  movieData: {
-    tmdb_id: number
-    title: string
-    type: 'movie' | 'tv'
-    poster_path?: string
-    backdrop_path?: string
-    tmdb_rating?: number
-    release_year?: number
-    overview?: string
-    genres?: string[]
-  } | null
+  item: WatchlistItem
 }
 
 interface Emits {
   (e: 'close'): void
-  (e: 'added', item: any): void
+  (e: 'updated', item: WatchlistItem): void
 }
 
 const props = defineProps<Props>()
 const emit = defineEmits<Emits>()
 
-const { addToWishlist } = useWishlist()
+const { updateWatchlistItem } = useWatchlist()
 
 // Form state
 const form = reactive({
-  priority: 'medium' as 'low' | 'medium' | 'high',
-  wish_status: 'want_to_watch' as 'want_to_watch' | 'watching' | 'completed' | 'on_hold' | 'dropped',
-  notes: ''
+  priority: props.item.priority,
+  watch_status: props.item.watch_status,
+  notes: props.item.notes || '',
+  watched_date: props.item.watched_date || ''
 })
 
 // Loading state
@@ -162,69 +165,35 @@ const loading = ref(false)
 
 // Methods
 const closeModal = () => {
-  resetForm()
   emit('close')
 }
 
-const resetForm = () => {
-  form.priority = 'medium'
-  form.wish_status = 'want_to_watch'
-  form.notes = ''
-}
-
 const handleSubmit = async () => {
-  if (!props.movieData) return
-
   try {
     loading.value = true
 
-    const wishlistData = {
-      tmdb_id: props.movieData.tmdb_id,
-      title: props.movieData.title,
-      type: props.movieData.type,
-      poster_path: props.movieData.poster_path,
-      backdrop_path: props.movieData.backdrop_path,
-      tmdb_rating: props.movieData.tmdb_rating,
-      release_year: props.movieData.release_year,
-      overview: props.movieData.overview,
-      genres: props.movieData.genres,
+    const updates = {
       priority: form.priority,
-      wish_status: form.wish_status,
-      notes: form.notes.trim() || undefined
-      // tags: selectedTags.value.map(tag => tag.id) // Shelved for now
+      watch_status: form.watch_status,
+      notes: form.notes.trim() || undefined,
+      watched_date: form.watched_date || undefined
     }
 
-    const newItem = await addToWishlist(wishlistData)
-    emit('added', newItem)
+    const updatedItem = await updateWatchlistItem(props.item.id, updates)
+    emit('updated', updatedItem)
     closeModal()
   } catch (error: any) {
-    console.error('Error adding to wishlist:', error)
-    // You could show a toast notification here
+    console.error('Error updating watchlist item:', error)
   } finally {
     loading.value = false
   }
 }
 
-// Removed tag-related watchers and event listeners since tags are shelved
+// Reset form when item changes
+watch(() => props.item, (newItem) => {
+  form.priority = newItem.priority
+  form.watch_status = newItem.watch_status
+  form.notes = newItem.notes || ''
+  form.watched_date = newItem.watched_date || ''
+}, { immediate: true })
 </script>
-
-<style scoped>
-/* Custom scrollbar for tag suggestions */
-.max-h-40::-webkit-scrollbar {
-  width: 4px;
-}
-
-.max-h-40::-webkit-scrollbar-track {
-  background: #f1f1f1;
-  border-radius: 2px;
-}
-
-.max-h-40::-webkit-scrollbar-thumb {
-  background: #c1c1c1;
-  border-radius: 2px;
-}
-
-.max-h-40::-webkit-scrollbar-thumb:hover {
-  background: #a1a1a1;
-}
-</style>

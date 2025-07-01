@@ -32,9 +32,9 @@
               <div class="absolute top-3 right-3">
                 <span
                   class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium text-white"
-                  :class="getStatusColor(item.wish_status)"
+                  :class="getStatusColor(item.watch_status)"
                 >
-                  {{ getStatusLabel(item.wish_status) }}
+                  {{ getStatusLabel(item.watch_status) }}
                 </span>
               </div>
             </div>
@@ -190,17 +190,17 @@
 </template>
 
 <script setup lang="ts">
-import type { WishlistItem } from '~/composables/useWishlist'
+import type { WatchlistItem } from '~/composables/useWatchlist'
 
 interface Props {
   show: boolean
-  item: WishlistItem
+  item: WatchlistItem
 }
 
 interface Emits {
   (e: 'close'): void
-  (e: 'edit', item: WishlistItem): void
-  (e: 'remove', item: WishlistItem): void
+  (e: 'edit', item: WatchlistItem): void
+  (e: 'remove', item: WatchlistItem): void
 }
 
 const props = defineProps<Props>()
@@ -348,7 +348,7 @@ watch(() => props.show, (newValue) => {
 
 // Debug: Check if component is mounting
 onMounted(() => {
-  console.log('WishlistDetailModal mounted with props:', { show: props.show, item: props.item })
+  console.log('WatchlistDetailModal mounted with props:', { show: props.show, item: props.item })
   // If the modal is already showing when mounted, fetch trailer
   if (props.show) {
     console.log('Modal is already showing on mount, fetching trailer...')

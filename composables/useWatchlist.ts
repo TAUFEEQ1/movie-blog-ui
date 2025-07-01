@@ -1,4 +1,4 @@
-export interface WishlistItem {
+export interface WatchlistItem {
   id: number
   tmdb_id: number
   documentId: string // Unique identifier for Strapi
@@ -12,7 +12,7 @@ export interface WishlistItem {
   genres?: string[]
   notes?: string
   priority: 'low' | 'medium' | 'high'
-  wish_status: 'want_to_watch' | 'watching' | 'completed' | 'on_hold' | 'dropped'
+  watch_status: 'want_to_watch' | 'watching' | 'completed' | 'on_hold' | 'dropped'
   date_added: string
   watched_date?: string
   is_active: boolean
@@ -30,7 +30,7 @@ export interface Tag {
   user?: any
 }
 
-export interface AddToWishlistData {
+export interface AddToWatchlistData {
   tmdb_id: number
   title: string
   type: 'movie' | 'tv'
@@ -42,16 +42,16 @@ export interface AddToWishlistData {
   genres?: string[]
   notes?: string
   priority?: 'low' | 'medium' | 'high'
-  wish_status?: 'want_to_watch' | 'watching' | 'completed' | 'on_hold' | 'dropped'
+  watch_status?: 'want_to_watch' | 'watching' | 'completed' | 'on_hold' | 'dropped'
   // tags?: number[] // Shelved for now
 }
 
-export const useWishlist = () => {
+export const useWatchlist = () => {
   const config = useRuntimeConfig()
   const { token } = useAuth()
 
   // State
-  const wishlistItems = ref<WishlistItem[]>([])
+  const watchlistItems = ref<WatchlistItem[]>([])
   const userTags = ref<Tag[]>([])
   const isLoading = ref(false)
   const error = ref('')
@@ -80,17 +80,17 @@ export const useWishlist = () => {
     }
   }
 
-  // Fetch user's wishlist
-  const fetchWishlist = async () => {
+  // Fetch user's watchlist
+  const fetchWatchlist = async () => {
     try {
       isLoading.value = true
       error.value = ''
       
       const response = await apiCall('/wishlists') as any
-      wishlistItems.value = response.data || []
+      watchlistItems.value = response.data || []
     } catch (err: any) {
-      error.value = err.message || 'Failed to fetch wishlist'
-      console.error('Error fetching wishlist:', err)
+      error.value = err.message || 'Failed to fetch watchlist'
+      console.error('Error fetching watchlist:', err)
     } finally {
       isLoading.value = false
     }
@@ -106,8 +106,8 @@ export const useWishlist = () => {
     }
   }
 
-  // Add item to wishlist
-  const addToWishlist = async (itemData: AddToWishlistData): Promise<WishlistItem> => {
+  // Add item to watchlist
+  const addToWatchlist = async (itemData: AddToWatchlistData): Promise<WatchlistItem> => {
     try {
       isLoading.value = true
       error.value = ''
@@ -120,19 +120,19 @@ export const useWishlist = () => {
       }) as any
 
       const newItem = response.data
-      wishlistItems.value.push(newItem)
+      watchlistItems.value.push(newItem)
       
       return newItem
     } catch (err: any) {
-      error.value = err.message || 'Failed to add item to wishlist'
+      error.value = err.message || 'Failed to add item to watchlist'
       throw err
     } finally {
       isLoading.value = false
     }
   }
 
-  // Remove item from wishlist by ID
-  const removeFromWishlist = async (documentId: string) => {
+  // Remove item from watchlist by ID
+  const removeFromWatchlist = async (documentId: string) => {
     try {
       isLoading.value = true
       error.value = ''
@@ -141,17 +141,17 @@ export const useWishlist = () => {
         method: 'DELETE'
       })
 
-      wishlistItems.value = wishlistItems.value.filter(item => item.documentId !== documentId)
+      watchlistItems.value = watchlistItems.value.filter(item => item.documentId !== documentId)
     } catch (err: any) {
-      error.value = err.message || 'Failed to remove item from wishlist'
+      error.value = err.message || 'Failed to remove item from watchlist'
       throw err
     } finally {
       isLoading.value = false
     }
   }
 
-  // Remove item from wishlist by TMDB ID
-  const removeFromWishlistByTmdbId = async (tmdbId: number) => {
+  // Remove item from watchlist by TMDB ID
+  const removeFromWatchlistByTmdbId = async (tmdbId: number) => {
     try {
       isLoading.value = true
       error.value = ''
@@ -160,28 +160,28 @@ export const useWishlist = () => {
         method: 'DELETE'
       })
 
-      wishlistItems.value = wishlistItems.value.filter(item => item.tmdb_id !== tmdbId)
+      watchlistItems.value = watchlistItems.value.filter(item => item.tmdb_id !== tmdbId)
     } catch (err: any) {
-      error.value = err.message || 'Failed to remove item from wishlist'
+      error.value = err.message || 'Failed to remove item from watchlist'
       throw err
     } finally {
       isLoading.value = false
     }
   }
 
-  // Check if item exists in wishlist
-  const checkInWishlist = async (tmdbId: number): Promise<{ exists: boolean; item?: WishlistItem }> => {
+  // Check if item exists in watchlist
+  const checkInWatchlist = async (tmdbId: number): Promise<{ exists: boolean; item?: WatchlistItem }> => {
     try {
       const response = await apiCall(`/wishlists/check/${tmdbId}`) as any
       return response
     } catch (err: any) {
-      console.error('Error checking wishlist:', err)
+      console.error('Error checking watchlist:', err)
       return { exists: false }
     }
   }
 
-  // Update wishlist item
-  const updateWishlistItem = async (id: number, updates: Partial<AddToWishlistData>) => {
+  // Update watchlist item
+  const updateWatchlistItem = async (id: number, updates: Partial<AddToWatchlistData>) => {
     try {
       isLoading.value = true
       error.value = ''
@@ -194,14 +194,14 @@ export const useWishlist = () => {
       }) as any
 
       const updatedItem = response.data
-      const index = wishlistItems.value.findIndex(item => item.id === id)
+      const index = watchlistItems.value.findIndex(item => item.id === id)
       if (index !== -1) {
-        wishlistItems.value[index] = updatedItem
+        watchlistItems.value[index] = updatedItem
       }
 
       return updatedItem
     } catch (err: any) {
-      error.value = err.message || 'Failed to update wishlist item'
+      error.value = err.message || 'Failed to update watchlist item'
       throw err
     } finally {
       isLoading.value = false
@@ -243,10 +243,10 @@ export const useWishlist = () => {
     }
   }
 
-  // Get wishlist stats
-  const getWishlistStats = computed(() => {
+  // Get watchlist stats
+  const getWatchlistStats = computed(() => {
     const stats = {
-      total: wishlistItems.value.length,
+      total: watchlistItems.value.length,
       wantToWatch: 0,
       watching: 0,
       completed: 0,
@@ -257,9 +257,9 @@ export const useWishlist = () => {
       highPriority: 0
     }
 
-    wishlistItems.value.forEach(item => {
+    watchlistItems.value.forEach(item => {
       // Status counts
-      stats[item.wish_status.replace('_', '') as keyof typeof stats]++
+      stats[item.watch_status.replace('_', '') as keyof typeof stats]++
       
       // Type counts
       if (item.type === 'movie') stats.movies++
@@ -272,18 +272,18 @@ export const useWishlist = () => {
     return stats
   })
 
-  // Filter wishlist items
-  const filterWishlistItems = (filters: {
-    wish_status?: string
+  // Filter watchlist items
+  const filterWatchlistItems = (filters: {
+    watch_status?: string
     type?: string
     priority?: string
     // tags?: number[] // Shelved for now
     search?: string
   }) => {
-    let filtered = [...wishlistItems.value]
+    let filtered = [...watchlistItems.value]
 
-    if (filters.wish_status) {
-      filtered = filtered.filter(item => item.wish_status === filters.wish_status)
+    if (filters.watch_status) {
+      filtered = filtered.filter(item => item.watch_status === filters.watch_status)
     }
 
     if (filters.type) {
@@ -314,24 +314,24 @@ export const useWishlist = () => {
 
   return {
     // State
-    wishlistItems: readonly(wishlistItems),
+    watchlistItems: readonly(watchlistItems),
     // userTags: readonly(userTags), // Shelved for now
     isLoading: readonly(isLoading),
     error: readonly(error),
     
     // Actions
-    fetchWishlist,
+    fetchWatchlist,
     // fetchTags, // Shelved for now
-    addToWishlist,
-    removeFromWishlist,
-    removeFromWishlistByTmdbId,
-    checkInWishlist,
-    updateWishlistItem,
+    addToWatchlist,
+    removeFromWatchlist,
+    removeFromWatchlistByTmdbId,
+    checkInWatchlist,
+    updateWatchlistItem,
     // createTag, // Shelved for now
     // searchTags, // Shelved for now
     
     // Computed
-    getWishlistStats,
-    filterWishlistItems
+    getWatchlistStats,
+    filterWatchlistItems
   }
 }

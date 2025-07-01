@@ -42,9 +42,9 @@
               <Icon name="mdi:eye" class="w-5 h-5" />
             </button>
             <button
-              @click="$emit('update', item, { wish_status: getNextStatus(item.wish_status) })"
+              @click="$emit('update', item, { watch_status: getNextStatus(item.watch_status) })"
               class="p-2 text-gray-600 hover:text-blue-600 transition-colors"
-              :title="`Mark as ${getStatusLabel(getNextStatus(item.wish_status))}`"
+              :title="`Mark as ${getStatusLabel(getNextStatus(item.watch_status))}`"
             >
               <Icon name="mdi:check" class="w-5 h-5" />
             </button>
@@ -58,7 +58,7 @@
             <button
               @click="confirmRemove"
               class="p-2 text-gray-600 hover:text-red-600 transition-colors"
-              title="Remove from wishlist"
+              title="Remove from watchlist"
             >
               <Icon name="mdi:delete" class="w-5 h-5" />
             </button>
@@ -69,9 +69,9 @@
         <div class="flex items-center gap-2 mb-2">
           <span
             class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium text-white"
-            :class="getStatusColor(item.wish_status)"
+            :class="getStatusColor(item.watch_status)"
           >
-            {{ getStatusLabel(item.wish_status) }}
+            {{ getStatusLabel(item.watch_status) }}
           </span>
           <span
             class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium text-white"
@@ -90,7 +90,7 @@
     </div>
 
     <!-- Edit Modal -->
-    <WishlistEditModal
+    <WatchlistEditModal
       v-if="showEditModal"
       :is-open="showEditModal"
       :item="item"
@@ -101,16 +101,16 @@
 </template>
 
 <script setup lang="ts">
-import type { WishlistItem } from '~/composables/useWishlist'
+import type { WatchlistItem } from '~/composables/useWatchlist'
 
 interface Props {
-  item: WishlistItem
+  item: WatchlistItem
 }
 
 interface Emits {
-  (e: 'remove', item: WishlistItem): void
-  (e: 'update', item: WishlistItem, updates: any): void
-  (e: 'view', item: WishlistItem): void
+  (e: 'remove', item: WatchlistItem): void
+  (e: 'update', item: WatchlistItem, updates: any): void
+  (e: 'view', item: WatchlistItem): void
 }
 
 const props = defineProps<Props>()
@@ -118,7 +118,7 @@ const emit = defineEmits<Emits>()
 
 const showEditModal = ref(false)
 
-// Methods (same as WishlistCard)
+// Methods (same as WatchlistCard)
 const getPriorityColor = (priority: string) => {
   switch (priority) {
     case 'high': return 'bg-red-500'
@@ -171,12 +171,12 @@ const getNextStatus = (currentStatus: string) => {
 }
 
 const confirmRemove = () => {
-  if (confirm(`Remove "${props.item.title}" from your wishlist?`)) {
+  if (confirm(`Remove "${props.item.title}" from your watchlist?`)) {
     emit('remove', props.item)
   }
 }
 
-const handleUpdated = (updatedItem: WishlistItem) => {
+const handleUpdated = (updatedItem: WatchlistItem) => {
   showEditModal.value = false
 }
 

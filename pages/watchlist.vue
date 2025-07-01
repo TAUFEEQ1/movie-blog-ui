@@ -32,7 +32,7 @@
         <!-- Page Header -->
         <div class="mb-8">
           <div class="flex items-center justify-between mb-4">
-            <h1 class="text-3xl font-bold text-gray-900">My Wishlist</h1>
+            <h1 class="text-3xl font-bold text-gray-900">My Watchlist</h1>
             <div class="flex items-center gap-3">
               <!-- View Toggle -->
               <div class="flex bg-white rounded-lg shadow-sm p-1">
@@ -112,7 +112,7 @@
               <div>
                 <label class="block text-sm font-medium text-gray-700 mb-2">Status</label>
                 <select
-                  v-model="filters.wish_status"
+                  v-model="filters.watch_status"
                   class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                 >
                   <option value="">All Statuses</option>
@@ -164,16 +164,16 @@
           <div class="max-w-md mx-auto">
             <Icon name="mdi:bookmark-outline" class="w-16 h-16 text-gray-300 mx-auto mb-4" />
             <h3 class="text-lg font-medium text-gray-900 mb-2">
-              {{ wishlistItems.length === 0 ? 'Your wishlist is empty' : 'No items match your filters' }}
+              {{ watchlistItems.length === 0 ? 'Your watchlist is empty' : 'No items match your filters' }}
             </h3>
             <p class="text-gray-600 mb-6">
-              {{ wishlistItems.length === 0 
+              {{ watchlistItems.length === 0 
                 ? 'Start adding movies and TV shows you want to watch!' 
                 : 'Try adjusting your filters to see more items.' 
               }}
             </p>
             <NuxtLink
-              v-if="wishlistItems.length === 0"
+              v-if="watchlistItems.length === 0"
               to="/"
               class="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
             >
@@ -183,14 +183,14 @@
           </div>
         </div>
 
-        <!-- Wishlist Items -->
+        <!-- Watchlist Items -->
         <div v-else>
           <!-- Grid View -->
           <div
             v-if="viewMode === 'grid'"
             class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6"
           >
-            <WishlistCard
+            <WatchlistCard
               v-for="item in filteredItems"
               :key="item.id"
               :item="item"
@@ -202,7 +202,7 @@
 
           <!-- List View -->
           <div v-else class="space-y-4">
-            <WishlistListItem
+            <WatchlistListItem
               v-for="item in filteredItems"
               :key="item.id"
               :item="item"
@@ -216,7 +216,7 @@
     </div>
 
     <!-- Detail Modal -->
-    <WishlistDetailModal
+    <WatchlistDetailModal
       v-if="selectedItem"
       :show="showDetailModal"
       :item="selectedItem"
@@ -228,41 +228,41 @@
 </template>
 
 <script setup lang="ts">
-import type { WishlistItem } from '~/composables/useWishlist'
+import type { WatchlistItem } from '~/composables/useWatchlist'
 
 // definePageMeta({
 //   middleware: 'auth'
 // })
 
 const { 
-  wishlistItems, 
+  watchlistItems, 
   isLoading, 
-  fetchWishlist, 
-  removeFromWishlist,
-  updateWishlistItem,
-  getWishlistStats,
-  filterWishlistItems
-} = useWishlist()
+  fetchWatchlist, 
+  removeFromWatchlist,
+  updateWatchlistItem,
+  getWatchlistStats,
+  filterWatchlistItems
+} = useWatchlist()
 
 // State
 const showMobileMenu = ref(false)
 const viewMode = ref<'grid' | 'list'>('grid')
 const showDetailModal = ref(false)
-const selectedItem = ref<WishlistItem | null>(null)
+const selectedItem = ref<WatchlistItem | null>(null)
 
 const filters = reactive({
   search: '',
-  wish_status: '',
+  watch_status: '',
   type: '',
   priority: ''
 })
 
 // Computed
-const stats = computed(() => getWishlistStats.value)
+const stats = computed(() => getWatchlistStats.value)
 
 const filteredItems = computed(() => {
-  return filterWishlistItems({
-    wish_status: filters.wish_status || undefined,
+  return filterWatchlistItems({
+    watch_status: filters.watch_status || undefined,
     type: filters.type || undefined,
     priority: filters.priority || undefined,
     search: filters.search || undefined
@@ -270,23 +270,23 @@ const filteredItems = computed(() => {
 })
 
 // Methods
-const removeItem = async (item: WishlistItem) => {
+const removeItem = async (item: WatchlistItem) => {
   try {
-    await removeFromWishlist(item.documentId)
+    await removeFromWatchlist(item.documentId)
   } catch (error) {
     console.error('Error removing item:', error)
   }
 }
 
-const updateItem = async (item: WishlistItem, updates: any) => {
+const updateItem = async (item: WatchlistItem, updates: any) => {
   try {
-    await updateWishlistItem(item.id, updates)
+    await updateWatchlistItem(item.id, updates)
   } catch (error) {
     console.error('Error updating item:', error)
   }
 }
 
-const openDetailModal = (item: WishlistItem) => {
+const openDetailModal = (item: WatchlistItem) => {
   selectedItem.value = item
   showDetailModal.value = true
 }
@@ -296,7 +296,7 @@ const closeDetailModal = () => {
   selectedItem.value = null
 }
 
-const openEditModal = (item: WishlistItem) => {
+const openEditModal = (item: WatchlistItem) => {
   // Close detail modal and open edit modal
   closeDetailModal()
   // You could emit an event or use a global state to open the edit modal
@@ -305,17 +305,17 @@ const openEditModal = (item: WishlistItem) => {
 
 // Load data on mount
 onMounted(async () => {
-  await fetchWishlist()
+  await fetchWatchlist()
 })
 
 // Save view mode preference
 watch(viewMode, (newMode) => {
-  localStorage.setItem('wishlist-view-mode', newMode)
+  localStorage.setItem('watchlist-view-mode', newMode)
 })
 
 // Load view mode preference
 onMounted(() => {
-  const savedMode = localStorage.getItem('wishlist-view-mode')
+  const savedMode = localStorage.getItem('watchlist-view-mode')
   if (savedMode === 'list' || savedMode === 'grid') {
     viewMode.value = savedMode
   }
