@@ -35,9 +35,14 @@
           
           <button 
             @click.stop="$emit('add-to-wishlist', item)"
-            class="bg-red-500 bg-opacity-90 hover:bg-opacity-100 rounded-full p-3 transition-all duration-300"
+            class="bg-blue-600 bg-opacity-90 hover:bg-opacity-100 rounded-full p-3 transition-all duration-300 relative"
           >
-            <Icon name="mdi:heart-outline" class="w-5 h-5 text-white" />
+            <span class="block group-hover:hidden">
+              <Icon name="mdi:bookmark-outline" class="w-5 h-5 text-white" />
+            </span>
+            <span class="hidden group-hover:block">
+              <Icon name="mdi:bookmark-check-outline" class="w-5 h-5 text-white" />
+            </span>
           </button>
         </div>
       </div>

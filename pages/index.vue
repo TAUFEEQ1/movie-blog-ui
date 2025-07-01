@@ -129,8 +129,8 @@
                   @click="addToWatchlist(currentHeroItem)"
                   class="bg-blue-600 bg-opacity-20 text-white px-6 py-3 rounded-xl font-semibold hover:bg-opacity-30 transition-colors flex items-center gap-2 backdrop-blur-sm"
                 >
-                  <Icon name="mdi:heart-outline" class="w-5 h-5" />
-                  Add to Wishlist
+                  <Icon name="mdi:bookmark-outline" class="w-5 h-5" />
+                  Add to Watchlist
                 </button>
               </div>
             </div>
@@ -273,8 +273,8 @@
             <div class="bg-white rounded-2xl p-6">
               <div class="flex items-center justify-between mb-4">
                 <div class="flex items-center gap-3">
-                  <Icon name="mdi:heart" class="w-6 h-6 text-red-500" />
-                  <h3 class="text-lg font-bold text-gray-900">My Wishlist</h3>
+                  <Icon name="mdi:playlist-plus" class="w-6 h-6 text-black" />
+                  <h3 class="text-lg font-bold text-gray-900">My Watchlist</h3>
                 </div>
                 <span class="text-sm text-gray-500">{{ wishlistItems.length }} items</span>
               </div>
@@ -313,8 +313,8 @@
               </div>
               
               <div v-else class="text-center py-8">
-                <Icon name="mdi:heart-outline" class="w-12 h-12 text-gray-300 mx-auto mb-3" />
-                <p class="text-gray-500 text-sm">No items in your wishlist yet</p>
+                <Icon name="mdi:bookmark-outline" class="w-12 h-12 text-gray-300 mx-auto mb-3" />
+                <p class="text-gray-500 text-sm">No items in your watchlist yet</p>
                 <p class="text-gray-400 text-xs mt-1">Add movies and shows from trending</p>
               </div>
             </div>
