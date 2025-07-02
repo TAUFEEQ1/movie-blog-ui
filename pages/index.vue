@@ -30,7 +30,7 @@
         <TopBar />
 
         <!-- Hero Section with Auto-Rotating Trending Movies -->
-        <div class="relative bg-gradient-to-r from-blue-900 to-purple-900 rounded-3xl overflow-hidden mb-8 h-96 md:h-[500px] transition-all duration-500">
+        <div v-if="!isMobile" class="relative bg-gradient-to-r from-blue-900 to-purple-900 rounded-3xl overflow-hidden mb-8 h-96 md:h-[500px] transition-all duration-500">
           <!-- Background Video/Image -->
           <div 
             v-if="currentHeroItem"
@@ -184,6 +184,52 @@
               <Icon :name="isAutoRotating ? 'mdi:pause' : 'mdi:play'" class="w-5 h-5" />
             </button>
           </div>
+        </div>
+        <!-- Mobile Carousel Hero Section -->
+        <div v-else class="relative bg-gradient-to-r from-blue-900 to-purple-900 rounded-3xl overflow-hidden mb-8 h-96 md:h-[500px] transition-all duration-500">
+          <Carousel :items-to-show="1" :wrap-around="true" :mouse-drag="true" :touch-drag="true" :autoplay="isAutoRotating ? 8000 : 0" :autoplayTimeout="8000" v-model="heroIndex">
+            <template #default="{ slide, index }">
+              <div class="relative flex items-center h-full p-6">
+                <div class="flex-1">
+                  <div class="flex items-center gap-2 mb-2">
+                    <Icon name="mdi:fire" class="w-5 h-5 text-orange-400" />
+                    <span class="text-orange-400 font-medium">Trending Now</span>
+                    <span class="text-white opacity-60 text-sm ml-2">
+                      {{ index + 1 }} / {{ heroItems.length }}
+                    </span>
+                  </div>
+                  <h1 class="text-3xl font-bold text-white mb-2 transition-all duration-500">
+                    {{ heroItems[index].title }}
+                  </h1>
+                  <!-- Overview hidden on mobile -->
+                  <!-- Rating Display and Actions -->
+                  <div class="flex items-center gap-4 mb-6">
+                    <div class="flex items-center gap-2">
+                      <span class="text-white font-semibold">{{ heroItems[index]?.tmdb_rating?.toFixed(1) }}</span>
+                      <span class="text-white opacity-75">TMDB</span>
+                    </div>
+                  </div>
+                  <div class="flex items-center gap-4">
+                    <button 
+                      v-if="heroItems[index]?.trailer_url"
+                      @click="playTrailer(heroItems[index].trailer_url)"
+                      class="bg-white text-gray-900 px-6 py-3 rounded-xl font-semibold hover:bg-gray-100 transition-colors flex items-center gap-2"
+                    >
+                      <Icon name="mdi:play" class="w-5 h-5" />
+                      Watch Trailer
+                    </button>
+                    <button 
+                      @click="addToWatchlist(heroItems[index])"
+                      class="bg-blue-600 bg-opacity-20 text-white px-6 py-3 rounded-xl font-semibold hover:bg-opacity-30 transition-colors flex items-center gap-2 backdrop-blur-sm"
+                    >
+                      <Icon name="mdi:bookmark-outline" class="w-5 h-5" />
+                      Add to Watchlist
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </template>
+          </Carousel>
         </div>
 
         <!-- Content Grid -->
@@ -722,4 +768,14 @@ const truncate = (text: string, max: number) => {
   if (!text) return ''
   return text.length > max ? text.slice(0, max) + '…' : text
 }
+
+// Import additional libraries
+import { ref, computed, onMounted, onUnmounted, nextTick } from 'vue'
+import { useWindowSize } from '@vueuse/core'
+import { Carousel } from 'vue3-carousel'
+import 'vue3-carousel/dist/carousel.css'
+
+// Responsive check for mobile
+const { width } = useWindowSize()
+const isMobile = computed(() => width.value < 1024)
 </script>
