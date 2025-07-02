@@ -103,7 +103,7 @@
               </h1>
 
               <p v-if="currentHeroItem" class="text-lg text-white mb-6 max-w-xl opacity-90 transition-all duration-500">
-                {{ currentHeroItem.overview }}
+                {{ truncate(currentHeroItem.overview, 200) }}
               </p>
 
               <!-- Rating Display and Actions -->
@@ -716,4 +716,10 @@ onMounted(async () => {
 onUnmounted(() => {
   stopHeroRotation()
 })
+
+// Helper function to truncate text
+const truncate = (text: string, max: number) => {
+  if (!text) return ''
+  return text.length > max ? text.slice(0, max) + '…' : text
+}
 </script>
