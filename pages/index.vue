@@ -30,16 +30,16 @@
         <TopBar />
 
         <!-- Hero Section with Auto-Rotating Trending Movies -->
-        <div v-if="!isMobile" class="relative bg-gradient-to-r from-blue-900 to-purple-900 rounded-3xl overflow-hidden mb-8 h-96 md:h-[500px] transition-all duration-500">
+        <div class="relative bg-gradient-to-r from-blue-900 to-purple-900 rounded-3xl overflow-hidden mb-8 h-96 md:h-[500px] transition-all duration-500">
           <!-- Background Video/Image -->
           <div 
             v-if="currentHeroItem"
             class="absolute inset-0 transition-opacity duration-1000"
             :class="{ 'opacity-100': currentHeroItem, 'opacity-0': !currentHeroItem }"
           >
-            <!-- YouTube Video Background -->
+            <!-- YouTube Video Background (hidden on mobile) -->
             <iframe 
-              v-if="currentHeroItem.trailer_url && showVideo && isYouTubeUrl(currentHeroItem.trailer_url)"
+              v-if="!isMobile && currentHeroItem.trailer_url && showVideo && isYouTubeUrl(currentHeroItem.trailer_url)"
               :key="`youtube-${currentHeroItem.tmdb_id}`"
               class="absolute inset-0 w-full h-full object-cover pointer-events-none transition-opacity duration-1000"
               :src="`https://www.youtube.com/embed/${getYouTubeVideoId(currentHeroItem.trailer_url)}?autoplay=1&mute=1&loop=1&controls=0&showinfo=0&rel=0&modestbranding=1&playsinline=1&playlist=${getYouTubeVideoId(currentHeroItem.trailer_url)}`"
@@ -50,9 +50,9 @@
               @error="onVideoError"
             ></iframe>
             
-            <!-- Direct Video Background (for non-YouTube videos) -->
+            <!-- Direct Video Background (hidden on mobile) -->
             <video 
-              v-else-if="currentHeroItem.trailer_url && showVideo && getVideoSource(currentHeroItem.trailer_url)"
+              v-else-if="!isMobile && currentHeroItem.trailer_url && showVideo && getVideoSource(currentHeroItem.trailer_url)"
               ref="heroVideoRef"
               :key="`video-${currentHeroItem.tmdb_id}`"
               class="absolute inset-0 w-full h-full object-cover transition-opacity duration-1000"
@@ -67,7 +67,7 @@
             
             <!-- Fallback Image Background -->
             <div 
-              v-if="!currentHeroItem.trailer_url || !showVideo"
+              v-if="isMobile || !currentHeroItem.trailer_url || !showVideo"
               class="absolute inset-0 bg-cover bg-center transition-all duration-1000"
               :style="`background-image: url('https://image.tmdb.org/t/p/w1280${currentHeroItem.backdrop_path}')`"
             ></div>
@@ -87,8 +87,16 @@
             </div>
           </div>
 
+          <!-- Touch Swipe Area -->
+          <div 
+            class="absolute inset-0 z-10"
+            @touchstart="handleTouchStart"
+            @touchmove="handleTouchMove"
+            @touchend="handleTouchEnd"
+          ></div>
+
           <!-- Content -->
-          <div class="relative z-10 flex items-center h-full p-8">
+          <div class="relative z-20 flex items-center h-full p-8">
             <div class="flex-1">
               <div class="flex items-center gap-2 mb-2">
                 <Icon name="mdi:fire" class="w-5 h-5 text-orange-400" />
@@ -102,7 +110,7 @@
                 {{ currentHeroItem.title }}
               </h1>
 
-              <p v-if="currentHeroItem" class="text-lg text-white mb-6 max-w-xl opacity-90 transition-all duration-500">
+              <p v-if="currentHeroItem" class="hidden md:block text-lg text-white mb-6 max-w-xl opacity-90 transition-all duration-500">
                 {{ truncate(currentHeroItem.overview, 200) }}
               </p>
 
@@ -122,7 +130,8 @@
                   class="bg-white text-gray-900 px-6 py-3 rounded-xl font-semibold hover:bg-gray-100 transition-colors flex items-center gap-2"
                 >
                   <Icon name="mdi:play" class="w-5 h-5" />
-                  Watch Trailer
+                  <span class="hidden sm:inline">Watch Trailer</span>
+                  <span class="sm:hidden">Play</span>
                 </button>
 
                 <button 
@@ -130,7 +139,8 @@
                   class="bg-blue-600 bg-opacity-20 text-white px-6 py-3 rounded-xl font-semibold hover:bg-opacity-30 transition-colors flex items-center gap-2 backdrop-blur-sm"
                 >
                   <Icon name="mdi:bookmark-outline" class="w-5 h-5" />
-                  Add to Watchlist
+                  <span class="hidden sm:inline">Add to Watchlist</span>
+                  <span class="sm:hidden">Save</span>
                 </button>
               </div>
             </div>
@@ -162,9 +172,9 @@
 
           <!-- Auto-rotation Controls -->
           <div class="absolute top-4 right-4 z-20 flex items-center gap-2">
-            <!-- Video/Image indicator -->
+            <!-- Video/Image indicator (hidden on mobile) -->
             <div 
-              v-if="currentHeroItem?.trailer_url"
+              v-if="!isMobile && currentHeroItem?.trailer_url"
               class="flex items-center gap-1 px-2 py-1 bg-black bg-opacity-30 rounded-lg backdrop-blur-sm text-white text-xs"
             >
               <Icon :name="showVideo && (isYouTubeUrl(currentHeroItem.trailer_url) || getVideoSource(currentHeroItem.trailer_url)) ? 'mdi:play-circle' : 'mdi:image'" class="w-3 h-3" />
@@ -184,52 +194,6 @@
               <Icon :name="isAutoRotating ? 'mdi:pause' : 'mdi:play'" class="w-5 h-5" />
             </button>
           </div>
-        </div>
-        <!-- Mobile Carousel Hero Section -->
-        <div v-else class="relative bg-gradient-to-r from-blue-900 to-purple-900 rounded-3xl overflow-hidden mb-8 h-96 md:h-[500px] transition-all duration-500">
-          <Carousel :items-to-show="1" :wrap-around="true" :mouse-drag="true" :touch-drag="true" :autoplay="isAutoRotating ? 8000 : 0" :autoplayTimeout="8000" v-model="heroIndex">
-            <template #default="{ slide, index }">
-              <div class="relative flex items-center h-full p-6">
-                <div class="flex-1">
-                  <div class="flex items-center gap-2 mb-2">
-                    <Icon name="mdi:fire" class="w-5 h-5 text-orange-400" />
-                    <span class="text-orange-400 font-medium">Trending Now</span>
-                    <span class="text-white opacity-60 text-sm ml-2">
-                      {{ index + 1 }} / {{ heroItems.length }}
-                    </span>
-                  </div>
-                  <h1 class="text-3xl font-bold text-white mb-2 transition-all duration-500">
-                    {{ heroItems[index].title }}
-                  </h1>
-                  <!-- Overview hidden on mobile -->
-                  <!-- Rating Display and Actions -->
-                  <div class="flex items-center gap-4 mb-6">
-                    <div class="flex items-center gap-2">
-                      <span class="text-white font-semibold">{{ heroItems[index]?.tmdb_rating?.toFixed(1) }}</span>
-                      <span class="text-white opacity-75">TMDB</span>
-                    </div>
-                  </div>
-                  <div class="flex items-center gap-4">
-                    <button 
-                      v-if="heroItems[index]?.trailer_url"
-                      @click="playTrailer(heroItems[index].trailer_url)"
-                      class="bg-white text-gray-900 px-6 py-3 rounded-xl font-semibold hover:bg-gray-100 transition-colors flex items-center gap-2"
-                    >
-                      <Icon name="mdi:play" class="w-5 h-5" />
-                      Watch Trailer
-                    </button>
-                    <button 
-                      @click="addToWatchlist(heroItems[index])"
-                      class="bg-blue-600 bg-opacity-20 text-white px-6 py-3 rounded-xl font-semibold hover:bg-opacity-30 transition-colors flex items-center gap-2 backdrop-blur-sm"
-                    >
-                      <Icon name="mdi:bookmark-outline" class="w-5 h-5" />
-                      Add to Watchlist
-                    </button>
-                  </div>
-                </div>
-              </div>
-            </template>
-          </Carousel>
         </div>
 
         <!-- Content Grid -->
@@ -778,4 +742,34 @@ import 'vue3-carousel/dist/carousel.css'
 // Responsive check for mobile
 const { width } = useWindowSize()
 const isMobile = computed(() => width.value < 1024)
+
+
+// Touch handling state
+const touchStartX = ref(0)
+const touchEndX = ref(0)
+const minSwipeDistance = 50 // minimum distance for a swipe
+
+const handleTouchStart = (e: TouchEvent) => {
+  touchStartX.value = e.touches[0].clientX
+}
+
+const handleTouchMove = (e: TouchEvent) => {
+  touchEndX.value = e.touches[0].clientX
+}
+
+const handleTouchEnd = () => {
+  const swipeDistance = touchEndX.value - touchStartX.value
+  
+  if (Math.abs(swipeDistance) > minSwipeDistance) {
+    if (swipeDistance > 0) {
+      // Swipe right - go to previous
+      const newIndex = (heroIndex.value - 1 + heroItems.value.length) % heroItems.value.length
+      goToHeroItem(newIndex)
+    } else {
+      // Swipe left - go to next
+      const newIndex = (heroIndex.value + 1) % heroItems.value.length
+      goToHeroItem(newIndex)
+    }
+  }
+}
 </script>
