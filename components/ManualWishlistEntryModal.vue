@@ -1,0 +1,205 @@
+<template>
+  <Teleport to="body">
+    <div
+      v-if="isOpen"
+      class="fixed inset-0 z-50 overflow-y-auto"
+      aria-labelledby="modal-title"
+      role="dialog"
+      aria-modal="true"
+    >
+      <!-- Background overlay -->
+      <div
+        class="flex items-center justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0"
+      >
+        <div
+          class="fixed inset-0 bg-black bg-opacity-75 transition-opacity"
+          aria-hidden="true"
+          @click="closeModal"
+        ></div>
+
+        <!-- Modal panel -->
+        <div
+          class="inline-block align-bottom bg-white rounded-2xl px-4 pt-5 pb-4 text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full sm:p-6"
+          @click.stop
+        >
+          <!-- Header -->
+          <div class="sm:flex sm:items-start">
+            <div class="mt-3 text-center sm:mt-0 sm:text-left w-full">
+              <h3 class="text-lg leading-6 font-medium text-gray-900 mb-4" id="modal-title">
+                Add Wishlist Entry Manually
+              </h3>
+
+              <!-- Form -->
+              <form @submit.prevent="handleSubmit" class="space-y-6">
+                <!-- Title -->
+                <div>
+                  <label class="block text-sm font-medium text-gray-700 mb-2">
+                    Title
+                  </label>
+                  <input
+                    v-model="form.title"
+                    type="text"
+                    required
+                    placeholder="Enter title..."
+                    class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  />
+                </div>
+
+                <!-- Type -->
+                <div>
+                  <label class="block text-sm font-medium text-gray-700 mb-2">
+                    Type
+                  </label>
+                  <select
+                    v-model="form.type"
+                    class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    required
+                  >
+                    <option value="movie">Movie</option>
+                    <option value="tv">TV Show</option>
+                  </select>
+                </div>
+
+                <!-- Priority -->
+                <div>
+                  <label class="block text-sm font-medium text-gray-700 mb-2">
+                    Priority
+                  </label>
+                  <select
+                    v-model="form.priority"
+                    class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  >
+                    <option value="low">Low</option>
+                    <option value="medium">Medium</option>
+                    <option value="high">High</option>
+                  </select>
+                </div>
+
+                <!-- Status -->
+                <div>
+                  <label class="block text-sm font-medium text-gray-700 mb-2">
+                    Status
+                  </label>
+                  <select
+                    v-model="form.watch_status"
+                    class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  >
+                    <option value="want_to_watch">Want to Watch</option>
+                    <option value="watching">Currently Watching</option>
+                    <option value="completed">Completed</option>
+                    <option value="on_hold">On Hold</option>
+                    <option value="dropped">Dropped</option>
+                  </select>
+                </div>
+
+                <!-- Notes -->
+                <div>
+                  <label class="block text-sm font-medium text-gray-700 mb-2">
+                    Notes (Optional)
+                  </label>
+                  <textarea
+                    v-model="form.notes"
+                    rows="3"
+                    placeholder="Add any personal notes..."
+                    class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none"
+                  ></textarea>
+                </div>
+
+                <!-- Actions -->
+                <div class="flex gap-3 pt-4">
+                  <button
+                    type="button"
+                    @click="closeModal"
+                    class="flex-1 px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    :disabled="loading"
+                    class="flex-1 px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    <span v-if="loading" class="flex items-center justify-center gap-2">
+                      <Icon name="mdi:loading" class="w-4 h-4 animate-spin" />
+                      Adding...
+                    </span>
+                    <span v-else>Add to Watchlist</span>
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </Teleport>
+</template>
+
+<script setup lang="ts">
+interface Props {
+  isOpen: boolean
+}
+
+interface Emits {
+  (e: 'close'): void
+  (e: 'added', item: any): void
+}
+
+const props = defineProps<Props>()
+const emit = defineEmits<Emits>()
+
+const form = reactive({
+  title: '',
+  type: 'movie' as 'movie' | 'tv',
+  priority: 'medium' as 'low' | 'medium' | 'high',
+  watch_status: 'want_to_watch' as 'want_to_watch' | 'watching' | 'completed' | 'on_hold' | 'dropped',
+  notes: ''
+})
+
+const loading = ref(false)
+
+const closeModal = () => {
+  resetForm()
+  emit('close')
+}
+
+const resetForm = () => {
+  form.title = ''
+  form.type = 'movie'
+  form.priority = 'medium'
+  form.watch_status = 'want_to_watch'
+  form.notes = ''
+}
+
+const handleSubmit = async () => {
+  if (!form.title.trim()) return
+  try {
+    loading.value = true
+    // Emit the form data for parent to handle (e.g., call addToWatchlist)
+    emit('added', { ...form })
+    closeModal()
+  } catch (error) {
+    // Optionally handle error
+  } finally {
+    loading.value = false
+  }
+}
+</script>
+
+<style scoped>
+/* Custom scrollbar for textarea */
+textarea::-webkit-scrollbar {
+  width: 4px;
+}
+textarea::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 2px;
+}
+textarea::-webkit-scrollbar-thumb {
+  background: #c1c1c1;
+  border-radius: 2px;
+}
+textarea::-webkit-scrollbar-thumb:hover {
+  background: #a1a1a1;
+}
+</style>
