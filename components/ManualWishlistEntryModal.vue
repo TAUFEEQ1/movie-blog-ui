@@ -184,7 +184,11 @@ const form = reactive({
   watch_status: 'want_to_watch' as 'want_to_watch' | 'watching' | 'completed' | 'on_hold' | 'dropped',
   notes: '',
   tmdb_id: undefined as number | undefined,
-  genres: undefined as string[] | undefined
+  genres: undefined as string[] | undefined,
+  poster_path: undefined as string | undefined,
+  backdrop_path: undefined as string | undefined,
+  release_year: undefined as number | undefined,
+  tmdb_rating: undefined as number | undefined
 })
 
 const loading = ref(false)
@@ -224,6 +228,10 @@ const selectTmdbItem = (item: any) => {
   form.title = item.title
   form.tmdb_id = item.tmdb_id
   form.genres = item.genres
+  form.poster_path = item.poster_path
+  form.backdrop_path = item.backdrop_path
+  form.release_year = item.release_date ? parseInt(item.release_date.split('-')[0]) : undefined
+  form.tmdb_rating = item.tmdb_rating
   // Optionally, you could also fill other fields here
   searchResults.value = []
 }
@@ -241,6 +249,10 @@ const resetForm = () => {
   form.notes = ''
   form.tmdb_id = undefined
   form.genres = []
+  form.poster_path = undefined
+  form.backdrop_path = undefined
+  form.release_year = undefined
+  form.tmdb_rating = undefined
   selectedTmdbItem.value = null
 }
 
