@@ -51,7 +51,7 @@
                 <span class="text-sm text-gray-300 capitalize">{{ item.type === 'movie' ? 'Movie' : 'TV Show' }}</span>
                 <div class="flex items-center gap-1 bg-black/30 px-2 py-1 rounded-full">
                   <Icon name="mdi:star" class="w-4 h-4 text-yellow-400" />
-                  <span class="text-sm font-bold text-white">{{ item.tmdb_vote_count?.toFixed(1) || 'N/A' }}</span>
+                  <span class="text-sm font-bold text-white">{{ item.tmdb_rating?.toFixed(1) || 'N/A' }}</span>
                 </div>
               </div>
               <div class="flex items-center gap-2">
@@ -87,13 +87,23 @@
 </template>
 
 <script setup lang="ts">
-const guestWatchlist = ref<TrendingItem[]>(JSON.parse(localStorage.getItem('guestWatchlist') || '[]'))
+import { onMounted, ref } from 'vue'
+
+const guestWatchlist = ref<TrendingItem[]>([])
 const showVideoModal = ref(false)
 const selectedVideoKey = ref('')
 
+onMounted(() => {
+  if (process.client) {
+    guestWatchlist.value = JSON.parse(localStorage.getItem('guestWatchlist') || '[]')
+  }
+})
+
 function removeFromGuestWatchlist(item: TrendingItem) {
-  guestWatchlist.value = guestWatchlist.value.filter(i => i.id !== item.id)
-  localStorage.setItem('guestWatchlist', JSON.stringify(guestWatchlist.value))
+  if (process.client) {
+    guestWatchlist.value = guestWatchlist.value.filter(i => i.id !== item.id)
+    localStorage.setItem('guestWatchlist', JSON.stringify(guestWatchlist.value))
+  }
 }
 
 // Trailer functions
