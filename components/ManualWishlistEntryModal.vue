@@ -53,26 +53,34 @@
                   <label class="block text-sm font-medium text-gray-700 mb-2">
                     Title
                   </label>
-                  <input
-                    v-model="form.title"
-                    type="text"
-                    required
-                    placeholder="Enter title..."
-                    class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  />
-                  <!-- Search Results -->
-                  <div v-if="form.title && searchLoading" class="text-xs text-gray-500 mt-2 flex items-center gap-2">
-                    <Icon name="mdi:loading" class="w-4 h-4 animate-spin" /> Searching TMDB...
-                  </div>
-                  <div v-if="searchResults.length > 0" class="mt-2 max-h-40 overflow-y-auto bg-gray-50 border border-gray-200 rounded-lg shadow-sm">
-                    <div v-for="result in searchResults" :key="result.tmdb_id" class="flex items-center gap-3 px-3 py-2 hover:bg-blue-50 cursor-pointer">
-                      <img v-if="result.poster_path" :src="`https://image.tmdb.org/t/p/w92${result.poster_path}`" :alt="result.title" class="w-8 h-12 object-cover rounded" />
-                      <div class="flex-1">
-                        <div class="font-medium text-gray-800">{{ result.title }}</div>
-                        <div class="text-xs text-gray-500">{{ result.release_date || '' }}</div>
+                  <template v-if="selectedTmdbItem">
+                    <div class="flex items-center gap-2 bg-gray-100 border border-gray-300 rounded px-3 py-2">
+                      <span class="font-medium text-gray-800">{{ selectedTmdbItem.title }}</span>
+                      <button type="button" @click="selectedTmdbItem = null; form.tmdb_id = undefined; form.title = ''" class="ml-auto text-xs text-blue-600 hover:underline">Change</button>
+                    </div>
+                  </template>
+                  <template v-else>
+                    <input
+                      v-model="form.title"
+                      type="text"
+                      required
+                      placeholder="Enter title..."
+                      class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    />
+                    <!-- Search Results -->
+                    <div v-if="form.title && searchLoading" class="text-xs text-gray-500 mt-2 flex items-center gap-2">
+                      <Icon name="mdi:loading" class="w-4 h-4 animate-spin" /> Searching TMDB...
+                    </div>
+                    <div v-if="searchResults.length > 0" class="mt-2 max-h-40 overflow-y-auto bg-gray-50 border border-gray-200 rounded-lg shadow-sm">
+                      <div v-for="result in searchResults" :key="result.tmdb_id" class="flex items-center gap-3 px-3 py-2 hover:bg-blue-50 cursor-pointer" @click="selectTmdbItem(result)">
+                        <img v-if="result.poster_path" :src="`https://image.tmdb.org/t/p/w92${result.poster_path}`" :alt="result.title" class="w-8 h-12 object-cover rounded" />
+                        <div class="flex-1">
+                          <div class="font-medium text-gray-800">{{ result.title }}</div>
+                          <div class="text-xs text-gray-500">{{ result.release_date || '' }}</div>
+                        </div>
                       </div>
                     </div>
-                  </div>
+                  </template>
                 </div>
 
                 <!-- Priority -->
@@ -171,7 +179,8 @@ const form = reactive({
   type: 'movie' as 'movie' | 'tv',
   priority: 'medium' as 'low' | 'medium' | 'high',
   watch_status: 'want_to_watch' as 'want_to_watch' | 'watching' | 'completed' | 'on_hold' | 'dropped',
-  notes: ''
+  notes: '',
+  tmdb_id: undefined as number | undefined
 })
 
 const loading = ref(false)
@@ -204,6 +213,16 @@ watch([
   }, 3000)
 })
 
+const selectedTmdbItem = ref<any | null>(null)
+
+const selectTmdbItem = (item: any) => {
+  selectedTmdbItem.value = item
+  form.title = item.title
+  form.tmdb_id = item.tmdb_id
+  // Optionally, you could also fill other fields here
+  searchResults.value = []
+}
+
 const closeModal = () => {
   resetForm()
   emit('close')
@@ -215,6 +234,8 @@ const resetForm = () => {
   form.priority = 'medium'
   form.watch_status = 'want_to_watch'
   form.notes = ''
+  form.tmdb_id = undefined
+  selectedTmdbItem.value = null
 }
 
 const handleSubmit = async () => {
