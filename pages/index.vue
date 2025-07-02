@@ -30,11 +30,16 @@
         <TopBar />
 
         <!-- Hero Section with Auto-Rotating Trending Movies -->
-        <div class="relative bg-gradient-to-r from-blue-900 to-purple-900 rounded-3xl overflow-hidden mb-8 h-96 md:h-[500px] transition-all duration-500">
+        <div 
+          class="relative bg-gradient-to-r from-blue-900 to-purple-900 rounded-3xl overflow-hidden mb-8 h-96 md:h-[500px] transition-all duration-500"
+          @touchstart.passive="handleTouchStart"
+          @touchmove.passive="handleTouchMove"
+          @touchend.passive="handleTouchEnd"
+        >
           <!-- Background Video/Image -->
           <div 
             v-if="currentHeroItem"
-            class="absolute inset-0 transition-opacity duration-1000"
+            class="absolute inset-0 transition-opacity duration-1000 pointer-events-none"
             :class="{ 'opacity-100': currentHeroItem, 'opacity-0': !currentHeroItem }"
           >
             <!-- YouTube Video Background (hidden on mobile) -->
@@ -79,7 +84,7 @@
           <!-- Loading State -->
           <div 
             v-if="!currentHeroItem" 
-            class="absolute inset-0 bg-gradient-to-r from-blue-900 to-purple-900 flex items-center justify-center"
+            class="absolute inset-0 bg-gradient-to-r from-blue-900 to-purple-900 flex items-center justify-center pointer-events-none"
           >
             <div class="text-white text-center">
               <Icon name="mdi:loading" class="w-8 h-8 animate-spin mx-auto mb-2" />
@@ -87,17 +92,9 @@
             </div>
           </div>
 
-          <!-- Touch Swipe Area -->
-          <div 
-            class="absolute inset-0 z-10"
-            @touchstart="handleTouchStart"
-            @touchmove="handleTouchMove"
-            @touchend="handleTouchEnd"
-          ></div>
-
           <!-- Content -->
-          <div class="relative z-20 flex items-center h-full p-8">
-            <div class="flex-1">
+          <div class="relative z-10 flex items-center h-full p-8 pointer-events-none">
+            <div class="flex-1 pointer-events-auto">
               <div class="flex items-center gap-2 mb-2">
                 <Icon name="mdi:fire" class="w-5 h-5 text-orange-400" />
                 <span class="text-orange-400 font-medium">Trending Now</span>
@@ -147,7 +144,7 @@
           </div>
 
           <!-- Hero Navigation Dots -->
-          <div class="absolute bottom-4 right-4 z-20 flex items-center gap-2">
+          <div class="absolute bottom-4 right-4 z-20 flex items-center gap-2 pointer-events-auto">
             <button
               v-for="(item, index) in heroItems"
               :key="`hero-dot-${item.tmdb_id}`"
@@ -171,7 +168,7 @@
           </div>
 
           <!-- Auto-rotation Controls -->
-          <div class="absolute top-4 right-4 z-20 flex items-center gap-2">
+          <div class="absolute top-4 right-4 z-20 flex items-center gap-2 pointer-events-auto">
             <!-- Video/Image indicator (hidden on mobile) -->
             <div 
               v-if="!isMobile && currentHeroItem?.trailer_url"
@@ -193,6 +190,20 @@
             >
               <Icon :name="isAutoRotating ? 'mdi:pause' : 'mdi:play'" class="w-5 h-5" />
             </button>
+          </div>
+
+          <!-- Mobile Swipe Indicator -->
+          <div 
+            v-if="isMobile && isSwiping" 
+            class="absolute inset-y-0 z-30 pointer-events-none flex items-center px-4"
+            :class="swipeDirection === 'right' ? 'left-0' : 'right-0'"
+          >
+            <div class="bg-white/20 backdrop-blur-sm rounded-full p-2">
+              <Icon 
+                :name="swipeDirection === 'right' ? 'mdi:chevron-left' : 'mdi:chevron-right'" 
+                class="w-6 h-6 text-white"
+              />
+            </div>
           </div>
         </div>
 
@@ -747,18 +758,31 @@ const isMobile = computed(() => width.value < 1024)
 // Touch handling state
 const touchStartX = ref(0)
 const touchEndX = ref(0)
+const touchCurrentX = ref(0)
+const isSwiping = ref(false)
+const swipeDirection = ref<'left' | 'right' | null>(null)
 const minSwipeDistance = 50 // minimum distance for a swipe
+const swipeThreshold = 30 // threshold to show swipe indicator
 
 const handleTouchStart = (e: TouchEvent) => {
   touchStartX.value = e.touches[0].clientX
+  touchCurrentX.value = e.touches[0].clientX
+  isSwiping.value = false
+  swipeDirection.value = null
 }
 
 const handleTouchMove = (e: TouchEvent) => {
-  touchEndX.value = e.touches[0].clientX
+  touchCurrentX.value = e.touches[0].clientX
+  const deltaX = touchCurrentX.value - touchStartX.value
+
+  if (Math.abs(deltaX) > swipeThreshold) {
+    isSwiping.value = true
+    swipeDirection.value = deltaX > 0 ? 'right' : 'left'
+  }
 }
 
 const handleTouchEnd = () => {
-  const swipeDistance = touchEndX.value - touchStartX.value
+  const swipeDistance = touchCurrentX.value - touchStartX.value
   
   if (Math.abs(swipeDistance) > minSwipeDistance) {
     if (swipeDistance > 0) {
@@ -771,5 +795,8 @@ const handleTouchEnd = () => {
       goToHeroItem(newIndex)
     }
   }
+
+  isSwiping.value = false
+  swipeDirection.value = null
 }
 </script>
