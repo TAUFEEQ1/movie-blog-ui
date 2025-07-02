@@ -1,11 +1,13 @@
 <template>
   <div class="min-h-screen bg-gradient-to-br from-gray-900 via-blue-900 to-purple-900 relative overflow-hidden">
-    <!-- Animated Background Elements -->
-    <div class="absolute inset-0 overflow-hidden">
-      <div class="absolute -top-40 -right-40 w-80 h-80 bg-gradient-to-br from-blue-400 to-purple-500 rounded-full opacity-20 animate-pulse"></div>
-      <div class="absolute -bottom-40 -left-40 w-96 h-96 bg-gradient-to-tr from-pink-400 to-yellow-500 rounded-full opacity-20 animate-pulse" style="animation-delay: 2s;"></div>
-      <div class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-64 h-64 bg-gradient-to-r from-green-400 to-blue-500 rounded-full opacity-10 animate-ping" style="animation-delay: 4s;"></div>
-    </div>
+    <Transition name="fade" appear>
+      <!-- Animated Background Elements -->
+      <div class="absolute inset-0 overflow-hidden">
+        <div class="absolute -top-40 -right-40 w-80 h-80 bg-gradient-to-br from-blue-400 to-purple-500 rounded-full bg-gradient" style="animation-delay: 0s"></div>
+        <div class="absolute -bottom-40 -left-40 w-96 h-96 bg-gradient-to-tr from-pink-400 to-yellow-500 rounded-full bg-gradient" style="animation-delay: 2s"></div>
+        <div class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-64 h-64 bg-gradient-to-r from-green-400 to-blue-500 rounded-full animate-ping" style="animation-delay: 4s"></div>
+      </div>
+    </Transition>
 
     <div class="relative z-10 p-6">
       <!-- Navigation Bar -->
@@ -131,9 +133,18 @@
 
 <script setup lang="ts">
 import { useTrending } from '~/composables/useTrending'
+import { nextTick } from 'vue'
 
 definePageMeta({
   auth: false
+})
+
+// Add head configuration for critical CSS
+useHead({
+  title: 'Welcome to TrendingNow',
+  bodyAttrs: {
+    class: 'overflow-x-hidden'
+  }
 })
 
 // Get trending items
@@ -160,15 +171,49 @@ const handleImageError = (event: Event) => {
   target.style.display = 'none'
 }
 
-// Load data on mount
-onMounted(() => {
+// Ensure proper hydration
+onMounted(async () => {
+  await nextTick()
   loadTrendingItems()
+  
+  // Force a repaint to ensure animations start properly
+  document.body.style.display = 'none'
+  document.body.offsetHeight // Force reflow
+  document.body.style.display = ''
 })
 </script>
 
-<style scoped>
-/* Animated entrance for trending items */
+<style>
+/* Critical styles for transitions and animations */
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity 0.5s ease;
+}
+
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
+}
+
+/* Background animations */
+@keyframes pulse {
+  0%, 100% { opacity: 0.2; }
+  50% { opacity: 0.3; }
+}
+
+@keyframes ping {
+  0% { transform: scale(1); opacity: 0.1; }
+  75%, 100% { transform: scale(2); opacity: 0; }
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-20px); }
+}
+
+/* Animated entrance for trending items with will-change for performance */
 .grid > div {
+  will-change: transform, opacity;
   animation: slideInUp 0.8s ease-out forwards;
   opacity: 0;
   transform: translateY(30px);
@@ -187,4 +232,17 @@ onMounted(() => {
 .grid > div:nth-child(3) { animation-delay: 200ms; }
 .grid > div:nth-child(4) { animation-delay: 300ms; }
 .grid > div:nth-child(5) { animation-delay: 400ms; }
+
+/* Optimized animations for background elements */
+.animate-pulse {
+  animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+.animate-ping {
+  animation: ping 2s cubic-bezier(0, 0, 0.2, 1) infinite;
+}
+
+.bg-gradient {
+  animation: float 6s ease-in-out infinite;
+}
 </style>

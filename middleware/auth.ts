@@ -15,8 +15,12 @@ export default defineNuxtRouteMiddleware(async (to, from) => {
     return
   }
   
-  // If user is not authenticated, redirect to welcome page
+  // If user is not authenticated, redirect to welcome page with a full reload
   if (!isAuthenticated.value) {
-    return navigateTo('/welcome')
+    if (process.client) {
+      window.location.href = '/welcome'
+      return
+    }
+    return navigateTo('/welcome', { redirectCode: 301 })
   }
 })
