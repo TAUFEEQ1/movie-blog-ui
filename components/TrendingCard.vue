@@ -67,7 +67,7 @@
       <div class="flex items-center justify-between mb-3">
         <span class="text-sm text-gray-500">{{ item.release_year }}</span>
         <span class="text-sm text-gray-500 flex items-center gap-1">
-          <Icon v-if="platformIcon" :name="platformIcon" class="w-5 h-5" />
+          <Icon v-if="platformIcon" :name="platformIcon" class="w-5 h-5" :class="platformIconColor" />
         </span>
       </div>
     </div>
@@ -139,8 +139,28 @@ const platformIconMap: Record<string, string> = {
   // Add more mappings as needed
 }
 
+const platformIconColorMap: Record<string, string> = {
+  'netflix': 'text-red-600',
+  'Netflix': 'text-red-600',
+  'prime-video': 'text-yellow-600',
+  'Amazon Prime': 'text-yellow-600',
+  'Disney+': 'text-blue-500',
+  'hulu': 'text-green-500',
+  'Hulu': 'text-green-500',
+  'Apple TV+': 'text-gray-900',
+  'max': 'text-purple-700',
+  'HBO Max': 'text-purple-700',
+  'paramount-plus': 'text-blue-700',
+  'Paramount+': 'text-blue-700',
+  // Add more mappings as needed
+}
+
 const platformIcon = computed(() => {
   return platformIconMap[props.item.platform] || ''
+})
+
+const platformIconColor = computed(() => {
+  return platformIconColorMap[props.item.platform] || 'text-gray-500'
 })
 
 // Methods
