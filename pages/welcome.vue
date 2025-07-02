@@ -190,8 +190,8 @@
                 @error="handleImageError"
               />
               
-              <!-- Overlay -->
-              <div class="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+              <!-- Overlay - Always visible on mobile, hover on desktop -->
+              <div class="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent sm:opacity-0 sm:group-hover:opacity-100 transition-opacity duration-300">
                 <div class="absolute bottom-0 left-0 right-0 p-4 text-white">
                   <h3 class="font-bold text-lg mb-2 line-clamp-2">{{ item.title || item.name }}</h3>
                   <div class="flex items-center justify-between mb-3">
@@ -298,9 +298,10 @@
 
         <!-- Video Modal -->
         <VideoModal
+          v-if="showVideoModal"
           :isOpen="showVideoModal"
-          :videoUrl="selectedVideoKey ? `https://www.youtube.com/embed/${selectedVideoKey}` : ''"
-          @close="showVideoModal = false"
+          :videoUrl="selectedVideoKey ? `https://www.youtube.com/watch?v=${selectedVideoKey}` : ''"
+          @close="() => showVideoModal = false"
         />
       </div>
     </div>
@@ -310,6 +311,7 @@
 <script setup lang="ts">
 import { useTrending } from '~/composables/useTrending'
 import { nextTick } from 'vue'
+import VideoModal from '~/components/VideoModal.vue'
 
 type VideoResult = {
   id: number
@@ -430,19 +432,24 @@ const isInGuestWatchlist = (item: any) => {
 // Video modal functions
 const openTrailer = async (item: any) => {
   try {
-    const videos = await $fetch<VideoResult>(`https://api.themoviedb.org/3/${item.media_type}/${item.id}/videos`, {
-      headers: {
-        'Authorization': `Bearer ${import.meta.env.VITE_TMDB_ACCESS_TOKEN}`
+    // Use the trailer URL directly from our item data
+    if (item.trailer_url) {
+      // Extract video ID from YouTube URL if it's a YouTube URL
+      const youtubeId = item.trailer_url.match(/(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})/i)?.[1]
+      
+      if (youtubeId) {
+        selectedVideoKey.value = youtubeId
+        showVideoModal.value = true
+      } else {
+        // If it's not a YouTube URL, use the URL directly
+        selectedVideoKey.value = item.trailer_url
+        showVideoModal.value = true
       }
-    })
-    
-    const trailer = videos.results?.find(v => v.type === 'Trailer') || videos.results?.[0]
-    if (trailer) {
-      selectedVideoKey.value = trailer.key
-      showVideoModal.value = true
+    } else {
+      console.warn('No trailer URL found for:', item.title || item.name)
     }
   } catch (error) {
-    console.error('Error fetching trailer:', error)
+    console.error('Error opening trailer:', error)
   }
 }
 

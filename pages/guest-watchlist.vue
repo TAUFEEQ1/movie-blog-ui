@@ -39,29 +39,34 @@
         >
           <img
             :src="`https://image.tmdb.org/t/p/w500${item.poster_path}`"
-            :alt="item.title || item.name"
+            :alt="item.title"
             class="w-full h-full object-cover transition-transform duration-300 group-hover:scale-110"
             @error="handleImageError"
           />
-          <div class="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent opacity-0 group-hover:opacity-100 transition-opacity">
-            <div class="absolute bottom-0 left-0 right-0 p-4">
-              <h3 class="text-white font-semibold truncate">{{ item.title || item.name }}</h3>
-              <p class="text-sm text-gray-300 mb-2">
-                {{ item.media_type === 'movie' ? 'Movie' : 'TV Show' }}
-              </p>
+          <!-- Overlay -->
+          <div class="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent sm:opacity-0 sm:group-hover:opacity-100 transition-opacity duration-300">
+            <div class="absolute bottom-0 left-0 right-0 p-4 text-white">
+              <h3 class="font-bold text-lg mb-2 line-clamp-2">{{ item.title }}</h3>
+              <div class="flex items-center justify-between mb-3">
+                <span class="text-sm text-gray-300 capitalize">{{ item.type === 'movie' ? 'Movie' : 'TV Show' }}</span>
+                <div class="flex items-center gap-1 bg-black/30 px-2 py-1 rounded-full">
+                  <Icon name="mdi:star" class="w-4 h-4 text-yellow-400" />
+                  <span class="text-sm font-bold text-white">{{ item.tmdb_vote_count?.toFixed(1) || 'N/A' }}</span>
+                </div>
+              </div>
               <div class="flex items-center gap-2">
                 <button
                   @click="openTrailer(item)"
-                  class="flex items-center gap-1 text-sm text-white bg-blue-500 hover:bg-blue-600 transition-colors px-3 py-1 rounded"
+                  class="flex-1 flex items-center justify-center gap-1 text-sm bg-blue-500 hover:bg-blue-600 transition-colors px-3 py-1.5 rounded"
                 >
                   <Icon name="mdi:play" class="w-4 h-4" />
                   Trailer
                 </button>
                 <button
-                  @click="toggleGuestWatchlist(item)"
-                  class="flex items-center gap-1 text-sm text-white bg-red-500 hover:bg-red-600 transition-colors px-3 py-1 rounded"
+                  @click="removeFromGuestWatchlist(item)"
+                  class="flex-1 flex items-center justify-center gap-1 text-sm bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 transition-colors px-3 py-1.5 rounded"
                 >
-                  <Icon name="mdi:close" class="w-4 h-4" />
+                  <Icon name="mdi:bookmark-remove" class="w-4 h-4" />
                   Remove
                 </button>
               </div>
@@ -82,64 +87,35 @@
 </template>
 
 <script setup lang="ts">
-interface TrendingItem {
-  id: number
-  title?: string
-  name?: string
-  poster_path: string
-  media_type: string
-  vote_average: number
-  release_date?: string
-  first_air_date?: string
-}
-
-interface VideoResult {
-  results: {
-    key: string
-    type: string
-  }[]
-}
-
-const guestWatchlist = ref<TrendingItem[]>([])
+const guestWatchlist = ref<TrendingItem[]>(JSON.parse(localStorage.getItem('guestWatchlist') || '[]'))
 const showVideoModal = ref(false)
 const selectedVideoKey = ref('')
 
-onMounted(() => {
-  // Load guest watchlist from localStorage
-  const savedWatchlist = localStorage.getItem('guestWatchlist')
-  if (savedWatchlist) {
-    guestWatchlist.value = JSON.parse(savedWatchlist)
-  }
-})
-
-// Guest watchlist functions
-const toggleGuestWatchlist = (item: TrendingItem) => {
-  const index = guestWatchlist.value.findIndex(i => i.id === item.id)
-  if (index === -1) {
-    guestWatchlist.value.push(item)
-  } else {
-    guestWatchlist.value.splice(index, 1)
-  }
+function removeFromGuestWatchlist(item: TrendingItem) {
+  guestWatchlist.value = guestWatchlist.value.filter(i => i.id !== item.id)
   localStorage.setItem('guestWatchlist', JSON.stringify(guestWatchlist.value))
 }
 
 // Trailer functions
-const openTrailer = async (item: TrendingItem) => {
-  try {
-    const videos = await $fetch<VideoResult>(`https://api.themoviedb.org/3/${item.media_type}/${item.id}/videos`, {
-      headers: {
-        'Authorization': `Bearer ${import.meta.env.VITE_TMDB_ACCESS_TOKEN}`
-      }
-    })
-    
-    const trailer = videos.results?.find(v => v.type === 'Trailer') || videos.results?.[0]
-    if (trailer) {
-      selectedVideoKey.value = trailer.key
+const openTrailer = (item: TrendingItem) => {
+  if (item.trailer_url) {
+    const videoId = extractYoutubeId(item.trailer_url)
+    if (videoId) {
       showVideoModal.value = true
+      selectedVideoKey.value = videoId
+    } else {
+      alert('Invalid trailer URL format')
     }
-  } catch (error) {
-    console.error('Error fetching trailer:', error)
+  } else {
+    alert('No trailer available for this title')
   }
+}
+
+// Helper function to extract YouTube video ID
+function extractYoutubeId(url: string) {
+  const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/
+  const match = url.match(regExp)
+  return match && match[2].length === 11 ? match[2] : null
 }
 
 const handleImageError = (event: Event) => {
