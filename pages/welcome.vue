@@ -355,7 +355,7 @@ const selectedVideoKey = ref('')
 const currentPage = ref(1)
 const itemsPerPage = 12
 const searchQuery = ref('')
-const sortBy = ref('popularity')
+const sortBy = ref('rating')
 const sortOrder = ref<'asc' | 'desc'>('desc')
 const activeTab = ref('movies')
 
