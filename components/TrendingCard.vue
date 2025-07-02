@@ -68,7 +68,6 @@
         <span class="text-sm text-gray-500">{{ item.release_year }}</span>
         <span class="text-sm text-gray-500 flex items-center gap-1">
           <Icon v-if="platformIcon" :name="platformIcon" class="w-5 h-5" />
-          {{ item.platform }}
         </span>
       </div>
     </div>
