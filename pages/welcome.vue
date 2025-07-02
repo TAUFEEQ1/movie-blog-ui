@@ -25,18 +25,16 @@
           <Icon name="mdi:fire" class="w-8 h-8 text-orange-400" />
           <h1 class="text-2xl font-bold text-white">TrendingNow</h1>
         </div>
-        <div class="hidden sm:flex items-center gap-4">
+        <div class="hidden sm:flex items-center">
           <NuxtLink 
-            to="/login" 
-            class="px-6 py-2 bg-white/10 backdrop-blur-sm rounded-xl text-white hover:bg-white/20 transition-colors"
+            to="/guest-watchlist" 
+            class="px-6 py-2 bg-gradient-to-r from-purple-500 to-pink-500 rounded-xl text-white hover:from-purple-600 hover:to-pink-600 transition-all transform hover:scale-105 flex items-center gap-2"
           >
-            Sign In
-          </NuxtLink>
-          <NuxtLink 
-            to="/register" 
-            class="px-6 py-2 bg-gradient-to-r from-blue-600 to-purple-600 rounded-xl text-white hover:from-blue-700 hover:to-purple-700 transition-all transform hover:scale-105"
-          >
-            Get Started
+            <Icon name="mdi:bookmark" class="w-5 h-5" />
+            My Watchlist
+            <span v-if="guestWatchlist.length > 0" class="px-2 py-0.5 text-xs bg-white/20 rounded-full">
+              {{ guestWatchlist.length }}
+            </span>
           </NuxtLink>
         </div>
       </nav>
@@ -297,60 +295,6 @@
           <Icon name="mdi:movie-off" class="w-12 h-12 text-gray-500 mx-auto mb-4" />
           <p class="text-gray-400">No items found matching your search.</p>
         </div>
-
-        <!-- Guest Watchlist Preview Section -->
-        <section class="max-w-7xl mx-auto px-4 py-12">
-          <div class="flex justify-between items-center mb-6">
-            <h2 class="text-2xl font-bold text-white">Your Watchlist</h2>
-            <NuxtLink
-              to="/guest-watchlist"
-              class="text-blue-400 hover:text-blue-300 transition-colors flex items-center gap-2"
-            >
-              View All
-              <Icon name="mdi:chevron-right" class="w-5 h-5" />
-            </NuxtLink>
-          </div>
-          
-          <div v-if="guestWatchlist.length === 0" class="text-center py-12">
-            <Icon name="mdi:bookmark-outline" class="w-12 h-12 text-gray-500 mx-auto mb-4" />
-            <p class="text-gray-400">Your watchlist is empty. Start adding movies and shows you want to watch!</p>
-          </div>
-          
-          <div v-else class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-            <div
-              v-for="item in guestWatchlist.slice(0, 4)"
-              :key="item.id"
-              class="relative group overflow-hidden rounded-xl"
-            >
-              <img
-                :src="`https://image.tmdb.org/t/p/w500${item.poster_path}`"
-                :alt="item.title || item.name"
-                class="w-full h-full object-cover transition-transform duration-300 group-hover:scale-110"
-              />
-              <div class="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent opacity-0 group-hover:opacity-100 transition-opacity">
-                <div class="absolute bottom-0 left-0 right-0 p-4">
-                  <h3 class="text-white font-semibold truncate">{{ item.title || item.name }}</h3>
-                  <div class="flex items-center gap-2 mt-2">
-                    <button
-                      @click="openTrailer(item)"
-                      class="flex items-center gap-1 text-sm text-white bg-blue-500 hover:bg-blue-600 transition-colors px-3 py-1 rounded"
-                    >
-                      <Icon name="mdi:play" class="w-4 h-4" />
-                      Trailer
-                    </button>
-                    <button
-                      @click="toggleGuestWatchlist(item)"
-                      class="flex items-center gap-1 text-sm text-white bg-red-500 hover:bg-red-600 transition-colors px-3 py-1 rounded"
-                    >
-                      <Icon name="mdi:close" class="w-4 h-4" />
-                      Remove
-                    </button>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </section>
 
         <!-- Video Modal -->
         <VideoModal
