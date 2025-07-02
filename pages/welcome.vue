@@ -12,11 +12,20 @@
     <div class="relative z-10 p-6">
       <!-- Navigation Bar -->
       <nav class="flex justify-between items-center max-w-7xl mx-auto mb-12">
+        <!-- Hamburger Menu Button -->
+        <button
+          @click="showMobileMenu = !showMobileMenu"
+          class="p-2 bg-white/10 backdrop-blur-sm rounded-lg text-white hover:bg-white/20 transition-colors"
+        >
+          <Icon name="mdi:menu" class="w-6 h-6" />
+        </button>
+        
+        <!-- Logo -->
         <div class="flex items-center gap-3">
           <Icon name="mdi:fire" class="w-8 h-8 text-orange-400" />
           <h1 class="text-2xl font-bold text-white">TrendingNow</h1>
         </div>
-        <div class="flex items-center gap-4">
+        <div class="hidden sm:flex items-center gap-4">
           <NuxtLink 
             to="/login" 
             class="px-6 py-2 bg-white/10 backdrop-blur-sm rounded-xl text-white hover:bg-white/20 transition-colors"
@@ -31,6 +40,46 @@
           </NuxtLink>
         </div>
       </nav>
+
+      <!-- Mobile Menu Overlay -->
+      <div 
+        v-if="showMobileMenu" 
+        class="fixed inset-0 bg-black bg-opacity-50 z-40"
+        @click="showMobileMenu = false"
+      >
+        <div 
+          class="fixed inset-y-0 left-0 w-64 bg-gradient-to-br from-gray-900 to-blue-900 p-6 transform transition-transform duration-300"
+          :class="showMobileMenu ? 'translate-x-0' : '-translate-x-full'"
+          @click.stop
+        >
+          <div class="flex flex-col gap-4">
+            <NuxtLink 
+              to="/guest-watchlist"
+              class="flex items-center gap-2 text-white hover:text-blue-400 transition-colors"
+              @click="showMobileMenu = false"
+            >
+              <Icon name="mdi:bookmark" class="w-5 h-5" />
+              My Watchlist
+            </NuxtLink>
+            <NuxtLink 
+              to="/login" 
+              class="flex items-center gap-2 text-white hover:text-blue-400 transition-colors"
+              @click="showMobileMenu = false"
+            >
+              <Icon name="mdi:login" class="w-5 h-5" />
+              Sign In
+            </NuxtLink>
+            <NuxtLink 
+              to="/register" 
+              class="flex items-center gap-2 text-white hover:text-blue-400 transition-colors"
+              @click="showMobileMenu = false"
+            >
+              <Icon name="mdi:rocket" class="w-5 h-5" />
+              Get Started
+            </NuxtLink>
+          </div>
+        </div>
+      </div>
 
       <!-- Hero Section -->
       <div class="max-w-7xl mx-auto text-center mb-16">
@@ -131,30 +180,48 @@
         <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
           <div 
             v-for="item in paginatedItems" 
-            :key="`trending-${item.tmdb_id}`"
+            :key="`trending-${item.id}`"
             class="group relative overflow-hidden rounded-2xl bg-white/10 backdrop-blur-sm border border-white/20 hover:border-yellow-400/60 transition-all duration-500 hover:scale-105"
           >
             <!-- Movie Poster -->
             <div class="aspect-[2/3] overflow-hidden">
               <img 
                 :src="`https://image.tmdb.org/t/p/w500${item.poster_path}`"
-                :alt="item.title"
+                :alt="item.title || item.name"
                 class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
                 @error="handleImageError"
               />
               
               <!-- Overlay -->
-              <div class="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-            </div>
-
-            <!-- Content Info -->
-            <div class="absolute bottom-0 left-0 right-0 p-4 text-white transform translate-y-full group-hover:translate-y-0 transition-transform duration-300">
-              <h3 class="font-bold text-lg mb-1 line-clamp-2">{{ item.title }}</h3>
-              <div class="flex items-center justify-between">
-                <span class="text-sm text-gray-300 capitalize">{{ item.type === 'movie' ? 'Movie' : 'TV Show' }}</span>
-                <div class="flex items-center gap-1 bg-black/30 px-2 py-1 rounded-full">
-                  <Icon name="mdi:star" class="w-4 h-4 text-yellow-400" />
-                  <span class="text-sm font-bold text-white">{{ item.tmdb_rating?.toFixed(1) || 'N/A' }}</span>
+              <div class="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                <div class="absolute bottom-0 left-0 right-0 p-4 text-white">
+                  <h3 class="font-bold text-lg mb-2 line-clamp-2">{{ item.title || item.name }}</h3>
+                  <div class="flex items-center justify-between mb-3">
+                    <span class="text-sm text-gray-300 capitalize">{{ item.media_type === 'movie' ? 'Movie' : 'TV Show' }}</span>
+                    <div class="flex items-center gap-1 bg-black/30 px-2 py-1 rounded-full">
+                      <Icon name="mdi:star" class="w-4 h-4 text-yellow-400" />
+                      <span class="text-sm font-bold text-white">{{ item.vote_average?.toFixed(1) || 'N/A' }}</span>
+                    </div>
+                  </div>
+                  <div class="flex items-center gap-2">
+                    <button
+                      @click="openTrailer(item)"
+                      class="flex-1 flex items-center justify-center gap-1 text-sm bg-blue-500 hover:bg-blue-600 transition-colors px-3 py-1.5 rounded"
+                    >
+                      <Icon name="mdi:play" class="w-4 h-4" />
+                      Trailer
+                    </button>
+                    <button
+                      @click="toggleGuestWatchlist(item)"
+                      class="flex-1 flex items-center justify-center gap-1 text-sm bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 transition-colors px-3 py-1.5 rounded"
+                    >
+                      <Icon 
+                        :name="isInGuestWatchlist(item) ? 'mdi:bookmark-check' : 'mdi:bookmark-plus'" 
+                        class="w-4 h-4" 
+                      />
+                      {{ isInGuestWatchlist(item) ? 'Saved' : 'Save' }}
+                    </button>
+                  </div>
                 </div>
               </div>
             </div>
@@ -231,24 +298,66 @@
           <p class="text-gray-400">No items found matching your search.</p>
         </div>
 
-        <!-- Features Section -->
-        <div class="mt-24 grid grid-cols-1 md:grid-cols-3 gap-8 text-white">
-          <div class="text-center p-6 bg-white/10 backdrop-blur-sm rounded-2xl border border-white/20">
-            <Icon name="mdi:movie-open" class="w-12 h-12 text-blue-400 mx-auto mb-4" />
-            <h3 class="text-xl font-bold mb-2">Track Movies & Shows</h3>
-            <p class="text-gray-300">Keep track of what you've watched and what you want to watch next.</p>
+        <!-- Guest Watchlist Preview Section -->
+        <section class="max-w-7xl mx-auto px-4 py-12">
+          <div class="flex justify-between items-center mb-6">
+            <h2 class="text-2xl font-bold text-white">Your Watchlist</h2>
+            <NuxtLink
+              to="/guest-watchlist"
+              class="text-blue-400 hover:text-blue-300 transition-colors flex items-center gap-2"
+            >
+              View All
+              <Icon name="mdi:chevron-right" class="w-5 h-5" />
+            </NuxtLink>
           </div>
-          <div class="text-center p-6 bg-white/10 backdrop-blur-sm rounded-2xl border border-white/20">
-            <Icon name="mdi:star" class="w-12 h-12 text-yellow-400 mx-auto mb-4" />
-            <h3 class="text-xl font-bold mb-2">Rate & Review</h3>
-            <p class="text-gray-300">Share your thoughts and see what others think about the latest releases.</p>
+          
+          <div v-if="guestWatchlist.length === 0" class="text-center py-12">
+            <Icon name="mdi:bookmark-outline" class="w-12 h-12 text-gray-500 mx-auto mb-4" />
+            <p class="text-gray-400">Your watchlist is empty. Start adding movies and shows you want to watch!</p>
           </div>
-          <div class="text-center p-6 bg-white/10 backdrop-blur-sm rounded-2xl border border-white/20">
-            <Icon name="mdi:compass" class="w-12 h-12 text-purple-400 mx-auto mb-4" />
-            <h3 class="text-xl font-bold mb-2">Discover New Content</h3>
-            <p class="text-gray-300">Get personalized recommendations based on your watching history.</p>
+          
+          <div v-else class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+            <div
+              v-for="item in guestWatchlist.slice(0, 4)"
+              :key="item.id"
+              class="relative group overflow-hidden rounded-xl"
+            >
+              <img
+                :src="`https://image.tmdb.org/t/p/w500${item.poster_path}`"
+                :alt="item.title || item.name"
+                class="w-full h-full object-cover transition-transform duration-300 group-hover:scale-110"
+              />
+              <div class="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent opacity-0 group-hover:opacity-100 transition-opacity">
+                <div class="absolute bottom-0 left-0 right-0 p-4">
+                  <h3 class="text-white font-semibold truncate">{{ item.title || item.name }}</h3>
+                  <div class="flex items-center gap-2 mt-2">
+                    <button
+                      @click="openTrailer(item)"
+                      class="flex items-center gap-1 text-sm text-white bg-blue-500 hover:bg-blue-600 transition-colors px-3 py-1 rounded"
+                    >
+                      <Icon name="mdi:play" class="w-4 h-4" />
+                      Trailer
+                    </button>
+                    <button
+                      @click="toggleGuestWatchlist(item)"
+                      class="flex items-center gap-1 text-sm text-white bg-red-500 hover:bg-red-600 transition-colors px-3 py-1 rounded"
+                    >
+                      <Icon name="mdi:close" class="w-4 h-4" />
+                      Remove
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
-        </div>
+        </section>
+
+        <!-- Video Modal -->
+        <VideoModal
+          :isOpen="showVideoModal"
+          :videoUrl="selectedVideoKey ? `https://www.youtube.com/embed/${selectedVideoKey}` : ''"
+          @close="showVideoModal = false"
+        />
       </div>
     </div>
   </div>
@@ -258,6 +367,18 @@
 import { useTrending } from '~/composables/useTrending'
 import { nextTick } from 'vue'
 
+type VideoResult = {
+  id: number
+  results: Array<{
+    id: string
+    key: string
+    name: string
+    site: string
+    type: string
+  }>
+}
+
+// Page meta
 definePageMeta({
   auth: false
 })
@@ -274,89 +395,126 @@ useHead({
 const { getAllTrending } = useTrending()
 const trendingItems = ref<any[]>([])
 
-// Filter and pagination state
-const searchQuery = ref('')
-const activeTab = ref('movies')
+// Mobile menu state
+const showMobileMenu = ref(false)
+
+// Guest watchlist using localStorage
+const guestWatchlist = ref<any[]>([])
+
+// Video modal state
+const showVideoModal = ref(false)
+const selectedVideoKey = ref('')
+
+// Pagination and filtering state
 const currentPage = ref(1)
-const itemsPerPage = 10
-const sortBy = ref('rating') // 'rating' or 'title'
-const sortOrder = ref('desc')
+const itemsPerPage = 12
+const searchQuery = ref('')
+const sortBy = ref('popularity')
+const sortOrder = ref<'asc' | 'desc'>('desc')
+const activeTab = ref('movies')
 
-// Computed properties for filtered items
-const movies = computed(() => {
-  return trendingItems.value
-    .filter(item => item.type === 'movie')
-    .filter(item => 
-      searchQuery.value === '' || 
-      item.title.toLowerCase().includes(searchQuery.value.toLowerCase())
-    )
-    .sort((a, b) => {
-      if (sortBy.value === 'rating') {
-        return sortOrder.value === 'desc' 
-          ? (b.tmdb_rating || 0) - (a.tmdb_rating || 0)
-          : (a.tmdb_rating || 0) - (b.tmdb_rating || 0)
-      }
-      return sortOrder.value === 'desc'
-        ? b.title.localeCompare(a.title)
-        : a.title.localeCompare(b.title)
-    })
-})
+const tabs = [
+  { id: 'movies', label: 'Movies' },
+  { id: 'tvShows', label: 'TV Shows' }
+]
 
-const tvShows = computed(() => {
-  return trendingItems.value
-    .filter(item => item.type === 'tv')
-    .filter(item => 
-      searchQuery.value === '' || 
-      item.title.toLowerCase().includes(searchQuery.value.toLowerCase())
-    )
-    .sort((a, b) => {
-      if (sortBy.value === 'rating') {
-        return sortOrder.value === 'desc' 
-          ? (b.tmdb_rating || 0) - (a.tmdb_rating || 0)
-          : (a.tmdb_rating || 0) - (b.tmdb_rating || 0)
-      }
-      return sortOrder.value === 'desc'
-        ? b.title.localeCompare(a.title)
-        : a.title.localeCompare(b.title)
-    })
-})
+// Filter and sort functions
+const movies = computed(() => trendingItems.value.filter(item => item.media_type === 'movie'))
+const tvShows = computed(() => trendingItems.value.filter(item => item.media_type === 'tv'))
 
-// Pagination
-const totalPages = computed(() => {
+const filteredItems = computed(() => {
   const items = activeTab.value === 'movies' ? movies.value : tvShows.value
-  return Math.ceil(items.length / itemsPerPage)
+  return items.filter(item => 
+    (item.title || item.name || '')
+      .toLowerCase()
+      .includes(searchQuery.value.toLowerCase())
+  )
+})
+
+const sortedItems = computed(() => {
+  return [...filteredItems.value].sort((a, b) => {
+    const aValue = sortBy.value === 'date' 
+      ? new Date(a.release_date || a.first_air_date || '').getTime()
+      : a.vote_average
+    const bValue = sortBy.value === 'date'
+      ? new Date(b.release_date || b.first_air_date || '').getTime()
+      : b.vote_average
+    
+    return sortOrder.value === 'desc' ? bValue - aValue : aValue - bValue
+  })
 })
 
 const paginatedItems = computed(() => {
-  const items = activeTab.value === 'movies' ? movies.value : tvShows.value
   const start = (currentPage.value - 1) * itemsPerPage
-  return items.slice(start, start + itemsPerPage)
+  return sortedItems.value.slice(start, start + itemsPerPage)
 })
 
-// Handle pagination
-const changePage = (page: number) => {
-  currentPage.value = page
-  window.scrollTo({ top: 0, behavior: 'smooth' })
-}
+const totalPages = computed(() => 
+  Math.ceil(sortedItems.value.length / itemsPerPage)
+)
 
-// Handle sorting
-const toggleSort = (field: string) => {
-  if (sortBy.value === field) {
-    sortOrder.value = sortOrder.value === 'desc' ? 'asc' : 'desc'
-  } else {
-    sortBy.value = field
-    sortOrder.value = 'desc'
+// Pagination functions
+const changePage = (page: number) => {
+  if (page >= 1 && page <= totalPages.value) {
+    currentPage.value = page
   }
 }
 
-// Load initial trending items
+onMounted(() => {
+  // Load guest watchlist from localStorage
+  const savedWatchlist = localStorage.getItem('guestWatchlist')
+  if (savedWatchlist) {
+    guestWatchlist.value = JSON.parse(savedWatchlist)
+  }
+})
+
+// Guest watchlist functions
+const toggleGuestWatchlist = (item: any) => {
+  const index = guestWatchlist.value.findIndex(i => i.id === item.id)
+  if (index === -1) {
+    guestWatchlist.value.push(item)
+  } else {
+    guestWatchlist.value.splice(index, 1)
+  }
+  localStorage.setItem('guestWatchlist', JSON.stringify(guestWatchlist.value))
+}
+
+const isInGuestWatchlist = (item: any) => {
+  return guestWatchlist.value.some(i => i.id === item.id)
+}
+
+// Video modal functions
+const openTrailer = async (item: any) => {
+  try {
+    const videos = await $fetch<VideoResult>(`https://api.themoviedb.org/3/${item.media_type}/${item.id}/videos`, {
+      headers: {
+        'Authorization': `Bearer ${import.meta.env.VITE_TMDB_ACCESS_TOKEN}`
+      }
+    })
+    
+    const trailer = videos.results?.find(v => v.type === 'Trailer') || videos.results?.[0]
+    if (trailer) {
+      selectedVideoKey.value = trailer.key
+      showVideoModal.value = true
+    }
+  } catch (error) {
+    console.error('Error fetching trailer:', error)
+  }
+}
+
+// Load trending items
 const loadTrendingItems = async () => {
   try {
     const response = await getAllTrending()
-    // Load all items that have a poster and rating
+    // Load all items that have a poster
     trendingItems.value = response.data
-      .filter((item: any) => item.poster_path && item.tmdb_rating)
-      .sort((a: any, b: any) => (b.tmdb_rating || 0) - (a.tmdb_rating || 0))
+      .filter((item: any) => item.poster_path)
+      .map((item: any) => ({
+        ...item,
+        vote_average: item.tmdb_rating || item.vote_average || 0,
+        media_type: item.type || item.media_type || 'movie'
+      }))
+      .sort((a: any, b: any) => (b.vote_average || 0) - (a.vote_average || 0))
   } catch (error) {
     console.error('Error loading trending items:', error)
   }
@@ -369,9 +527,22 @@ const handleImageError = (event: Event) => {
 }
 
 // Ensure proper hydration
+// Load data on mount
 onMounted(async () => {
   await nextTick()
-  loadTrendingItems()
+  
+  // Load all data in parallel
+  await Promise.all([
+    loadTrendingItems(),
+    // Load guest watchlist from localStorage
+    new Promise<void>((resolve) => {
+      const savedWatchlist = localStorage.getItem('guestWatchlist')
+      if (savedWatchlist) {
+        guestWatchlist.value = JSON.parse(savedWatchlist)
+      }
+      resolve()
+    })
+  ])
   
   // Force a repaint to ensure animations start properly
   document.body.style.display = 'none'
