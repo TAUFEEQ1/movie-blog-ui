@@ -26,7 +26,7 @@
           <div class="sm:flex sm:items-start">
             <div class="mt-3 text-center sm:mt-0 sm:text-left w-full">
               <h3 class="text-lg leading-6 font-medium text-gray-900 mb-4" id="modal-title">
-                Add Wishlist Entry Manually
+                Add Watchlist Entry Manually
               </h3>
 
               <!-- Form -->
@@ -139,14 +139,17 @@
                   </button>
                   <button
                     type="submit"
-                    :disabled="loading"
-                    class="flex-1 px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                    :disabled="loading || !form.tmdb_id"
+                    class="flex-1 px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed relative"
                   >
                     <span v-if="loading" class="flex items-center justify-center gap-2">
                       <Icon name="mdi:loading" class="w-4 h-4 animate-spin" />
                       Adding...
                     </span>
                     <span v-else>Add to Watchlist</span>
+                    <span v-if="!loading && !form.tmdb_id" class="absolute left-1/2 -translate-x-1/2 bottom-full mb-2 w-max bg-gray-800 text-white text-xs rounded px-2 py-1 shadow-lg z-10" style="white-space:nowrap;">
+                      Please select a search result before submitting.
+                    </span>
                   </button>
                 </div>
               </form>
@@ -180,7 +183,8 @@ const form = reactive({
   priority: 'medium' as 'low' | 'medium' | 'high',
   watch_status: 'want_to_watch' as 'want_to_watch' | 'watching' | 'completed' | 'on_hold' | 'dropped',
   notes: '',
-  tmdb_id: undefined as number | undefined
+  tmdb_id: undefined as number | undefined,
+  genres: undefined as string[] | undefined
 })
 
 const loading = ref(false)
@@ -219,6 +223,7 @@ const selectTmdbItem = (item: any) => {
   selectedTmdbItem.value = item
   form.title = item.title
   form.tmdb_id = item.tmdb_id
+  form.genres = item.genres
   // Optionally, you could also fill other fields here
   searchResults.value = []
 }
@@ -235,6 +240,7 @@ const resetForm = () => {
   form.watch_status = 'want_to_watch'
   form.notes = ''
   form.tmdb_id = undefined
+  form.genres = []
   selectedTmdbItem.value = null
 }
 
