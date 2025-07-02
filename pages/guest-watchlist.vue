@@ -31,11 +31,11 @@
         </NuxtLink>
       </div>
 
-      <div v-else class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+      <div v-else class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-6 justify-center">
         <div
           v-for="item in guestWatchlist"
           :key="item.id"
-          class="relative group overflow-hidden rounded-xl"
+          class="relative group overflow-hidden rounded-xl mx-auto"
         >
           <img
             :src="`https://image.tmdb.org/t/p/w500${item.poster_path}`"
@@ -66,8 +66,7 @@
                   @click="removeFromGuestWatchlist(item)"
                   class="flex-1 flex items-center justify-center gap-1 text-sm bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 transition-colors px-3 py-1.5 rounded"
                 >
-                  <Icon name="mdi:bookmark-remove" class="w-4 h-4" />
-                  Remove
+                  <Icon name="mdi:delete" class="w-4 h-4" />
                 </button>
               </div>
             </div>

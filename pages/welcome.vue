@@ -9,19 +9,18 @@
       </div>
     </Transition>
 
-    <div class="relative z-10 p-6">
+    <div class="relative z-10 px-4 sm:px-8 lg:px-16 py-6">
       <!-- Navigation Bar -->
-      <nav class="flex justify-between items-center max-w-7xl mx-auto mb-12">
-        <!-- Hamburger Menu Button -->
+      <nav class="flex justify-between items-center max-w-screen-xl mx-auto mb-12 relative">
+        <!-- Hamburger Menu Button: Only visible on mobile -->
         <button
           @click="showMobileMenu = !showMobileMenu"
-          class="p-2 bg-white/10 backdrop-blur-sm rounded-lg text-white hover:bg-white/20 transition-colors"
+          class="p-2 bg-white/10 backdrop-blur-sm rounded-lg text-white hover:bg-white/20 transition-colors sm:hidden"
         >
           <Icon name="mdi:menu" class="w-6 h-6" />
         </button>
-        
-        <!-- Logo -->
-        <div class="flex items-center gap-3">
+        <!-- Logo: Centered on mobile, left on desktop -->
+        <div class="flex items-center gap-3 mx-auto sm:mx-0">
           <Icon name="mdi:fire" class="w-8 h-8 text-orange-400" />
           <h1 class="text-2xl font-bold text-white">TrendingNow</h1>
         </div>
@@ -37,6 +36,15 @@
             </span>
           </NuxtLink>
         </div>
+        <!-- Mobile Watchlist Icon: Only visible on mobile, top right -->
+        <NuxtLink
+          to="/guest-watchlist"
+          class="absolute right-0 top-1/2 -translate-y-1/2 sm:hidden p-2 bg-white/10 rounded-lg text-white hover:bg-white/20 transition-colors"
+          style="margin-right: 0.25rem;"
+        >
+          <Icon name="mdi:bookmark" class="w-6 h-6" />
+          <span v-if="guestWatchlist.length > 0" class="absolute -top-1 -right-1 bg-pink-500 text-xs rounded-full px-1.5 py-0.5">{{ guestWatchlist.length }}</span>
+        </NuxtLink>
       </nav>
 
       <!-- Mobile Menu Overlay -->
@@ -80,7 +88,7 @@
       </div>
 
       <!-- Hero Section -->
-      <div class="max-w-7xl mx-auto text-center mb-16">
+      <div class="max-w-screen-xl mx-auto text-center mb-16">
         <h1 class="text-4xl md:text-6xl font-bold text-white mb-6">
           Discover Your Next Favorite
           <span class="bg-gradient-to-r from-blue-400 to-purple-400 text-transparent bg-clip-text">Entertainment</span>
@@ -107,7 +115,7 @@
       </div>
 
       <!-- Trending Content -->
-      <div class="max-w-7xl mx-auto">
+      <div class="max-w-screen-xl mx-auto">
         <div class="flex flex-col gap-6 mb-8">
           <div class="flex items-center justify-between">
             <div class="flex items-center gap-3">
@@ -175,7 +183,7 @@
           </div>
         </div>
 
-        <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
+        <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-6">
           <div 
             v-for="item in paginatedItems" 
             :key="`trending-${item.id}`"
@@ -207,7 +215,7 @@
                       class="flex-1 flex items-center justify-center gap-1 text-sm bg-blue-500 hover:bg-blue-600 transition-colors px-3 py-1.5 rounded"
                     >
                       <Icon name="mdi:play" class="w-4 h-4" />
-                      Trailer
+                      <span class="hidden sm:inline">Trailer</span>
                     </button>
                     <button
                       @click="toggleGuestWatchlist(item)"
@@ -217,7 +225,7 @@
                         :name="isInGuestWatchlist(item) ? 'mdi:bookmark-check' : 'mdi:bookmark-plus'" 
                         class="w-4 h-4" 
                       />
-                      {{ isInGuestWatchlist(item) ? 'Saved' : 'Save' }}
+                      <span class="hidden sm:inline">{{ isInGuestWatchlist(item) ? 'Saved' : 'Save' }}</span>
                     </button>
                   </div>
                 </div>
@@ -361,7 +369,7 @@ const activeTab = ref('movies')
 
 const tabs = [
   { id: 'movies', label: 'Movies' },
-  { id: 'tvShows', label: 'TV Shows' }
+  { id: 'tvShows', label: 'TV' }
 ]
 
 // Filter and sort functions
