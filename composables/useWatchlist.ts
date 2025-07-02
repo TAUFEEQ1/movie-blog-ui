@@ -250,6 +250,17 @@ export const useWatchlist = () => {
     }
   }
 
+  // Search TMDB for a title
+  const searchTmdb = async (query: string, type: 'movie' | 'tv') => {
+    try {
+      const response = await apiCall(`/wishlists/search-tmdb?query=${encodeURIComponent(query)}&type=${type}`) as any
+      return response.results || []
+    } catch (err: any) {
+      console.error('Error searching TMDB:', err)
+      return []
+    }
+  }
+
   // Get watchlist stats
   const getWatchlistStats = computed(() => {
     const stats = {
@@ -356,7 +367,7 @@ export const useWatchlist = () => {
     // createTag, // Shelved for now
     // searchTags, // Shelved for now
     uploadNetflixWatchlist,
-
+    searchTmdb, // <-- add this
     // Computed
     getWatchlistStats,
     filterWatchlistItems
