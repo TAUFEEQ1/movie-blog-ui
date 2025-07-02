@@ -375,7 +375,8 @@ import { useWatchlist } from '~/composables/useWatchlist'
 
 // Protect this page with authentication middleware
 definePageMeta({
-  middleware: 'auth'
+  middleware: ['auth'],
+  auth: true
 })
 
 // Import composables
