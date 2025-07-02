@@ -66,7 +66,10 @@
       
       <div class="flex items-center justify-between mb-3">
         <span class="text-sm text-gray-500">{{ item.release_year }}</span>
-        <span class="text-sm text-gray-500">{{ item.platform }}</span>
+        <span class="text-sm text-gray-500 flex items-center gap-1">
+          <Icon v-if="platformIcon" :name="platformIcon" class="w-5 h-5" />
+          {{ item.platform }}
+        </span>
       </div>
     </div>
   </div>
@@ -122,6 +125,23 @@ const displayGenres = computed(() => {
     return props.item.genres.slice(0, 2) // Show only first 2 genres
   }
   return []
+})
+
+const platformIconMap: Record<string, string> = {
+  'netflix': 'mdi:netflix',
+  'Netflix': 'mdi:netflix',
+  'prime-video': 'mdi:amazon',
+  'Disney+': 'mdi:disney',
+  'hulu': 'mdi:hulu',
+  'Apple TV+': 'mdi:apple',
+  'max': 'mdi:alpha-h-box',
+  'paramount-plus': 'mdi:alpha-p-box', // Added Paramount Plus
+  'Paramount+': 'mdi:alpha-p-box',
+  // Add more mappings as needed
+}
+
+const platformIcon = computed(() => {
+  return platformIconMap[props.item.platform] || ''
 })
 
 // Methods
