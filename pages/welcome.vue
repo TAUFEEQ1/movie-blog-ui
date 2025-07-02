@@ -41,17 +41,17 @@
         <p class="text-xl text-gray-300 max-w-2xl mx-auto mb-8">
           Track, rate, and discover trending movies and TV shows. Join our community of entertainment enthusiasts.
         </p>
-        <div class="flex justify-center gap-6">
+        <div class="flex flex-col sm:flex-row justify-center gap-4 sm:gap-6 w-full max-w-md mx-auto">
           <NuxtLink 
             to="/register" 
-            class="px-8 py-3 bg-gradient-to-r from-blue-600 to-purple-600 rounded-xl text-white font-semibold hover:from-blue-700 hover:to-purple-700 transition-all transform hover:scale-105 flex items-center gap-2"
+            class="w-full px-8 py-3 bg-gradient-to-r from-blue-600 to-purple-600 rounded-xl text-white font-semibold hover:from-blue-700 hover:to-purple-700 transition-all transform hover:scale-105 flex items-center justify-center gap-2"
           >
             <Icon name="mdi:rocket" class="w-5 h-5" />
             Start Your Journey
           </NuxtLink>
           <NuxtLink 
             to="/login" 
-            class="px-8 py-3 bg-white/10 backdrop-blur-sm rounded-xl text-white font-semibold hover:bg-white/20 transition-colors flex items-center gap-2"
+            class="w-full px-8 py-3 bg-white/10 backdrop-blur-sm rounded-xl text-white font-semibold hover:bg-white/20 transition-colors flex items-center justify-center gap-2"
           >
             <Icon name="mdi:login" class="w-5 h-5" />
             Sign In
@@ -61,23 +61,76 @@
 
       <!-- Trending Content -->
       <div class="max-w-7xl mx-auto">
-        <div class="flex items-center justify-between mb-8">
-          <div class="flex items-center gap-3">
-            <Icon name="mdi:fire" class="w-6 h-6 text-orange-400" />
-            <h2 class="text-2xl font-bold text-white">Trending Now</h2>
+        <div class="flex flex-col gap-6 mb-8">
+          <div class="flex items-center justify-between">
+            <div class="flex items-center gap-3">
+              <Icon name="mdi:fire" class="w-6 h-6 text-orange-400" />
+              <h2 class="text-2xl font-bold text-white">Trending Now</h2>
+            </div>
+            <NuxtLink 
+              to="/register" 
+              class="text-blue-400 hover:text-blue-300 transition-colors flex items-center gap-2"
+            >
+              <span>Join to see more</span>
+              <Icon name="mdi:arrow-right" class="w-5 h-5" />
+            </NuxtLink>
           </div>
-          <NuxtLink 
-            to="/register" 
-            class="text-blue-400 hover:text-blue-300 transition-colors flex items-center gap-2"
-          >
-            <span>Join to see more</span>
-            <Icon name="mdi:arrow-right" class="w-5 h-5" />
-          </NuxtLink>
+
+          <!-- Filters -->
+          <div class="flex flex-wrap gap-4 items-center">
+            <div class="flex-1 min-w-[200px]">
+              <input
+                v-model="searchQuery"
+                type="search"
+                placeholder="Search titles..."
+                class="w-full px-4 py-2 bg-white/10 backdrop-blur-sm border border-white/20 rounded-xl text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
+            <div class="flex items-center gap-4">
+              <select
+                v-model="sortBy"
+                class="px-4 py-2 bg-white/10 backdrop-blur-sm border border-white/20 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+              >
+                <option value="rating">Sort by Rating</option>
+                <option value="title">Sort by Title</option>
+              </select>
+              <button
+                @click="sortOrder = sortOrder === 'desc' ? 'asc' : 'desc'"
+                class="p-2 bg-white/10 backdrop-blur-sm border border-white/20 rounded-xl text-white hover:bg-white/20"
+              >
+                <Icon 
+                  :name="sortOrder === 'desc' ? 'mdi:sort-descending' : 'mdi:sort-ascending'" 
+                  class="w-5 h-5"
+                />
+              </button>
+            </div>
+          </div>
+
+          <!-- Content Tabs -->
+          <div class="flex gap-4 border-b border-white/20">
+            <button
+              v-for="tab in [{ id: 'movies', label: 'Movies', icon: 'mdi:movie' }, { id: 'tv', label: 'TV Shows', icon: 'mdi:television-classic' }]"
+              :key="tab.id"
+              @click="activeTab = tab.id; currentPage = 1"
+              :class="[
+                'px-6 py-3 flex items-center gap-2 font-medium transition-colors',
+                activeTab === tab.id
+                  ? 'text-blue-400 border-b-2 border-blue-400'
+                  : 'text-gray-400 hover:text-gray-300'
+              ]"
+            >
+              <Icon :name="tab.icon" class="w-5 h-5" />
+              {{ tab.label }}
+              <span class="ml-2 px-2 py-0.5 text-xs rounded-full bg-white/10">
+                {{ tab.id === 'movies' ? movies.length : tvShows.length }}
+              </span>
+            </button>
+          </div>
         </div>
 
         <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
           <div 
-            v-for="item in trendingItems" 
+            v-for="item in paginatedItems" 
             :key="`trending-${item.tmdb_id}`"
             class="group relative overflow-hidden rounded-2xl bg-white/10 backdrop-blur-sm border border-white/20 hover:border-yellow-400/60 transition-all duration-500 hover:scale-105"
           >
@@ -106,6 +159,76 @@
               </div>
             </div>
           </div>
+        </div>
+
+        <!-- Pagination -->
+        <div v-if="totalPages > 1" class="mt-8 flex justify-center items-center gap-2">
+          <!-- Previous Page -->
+          <button
+            @click="changePage(currentPage - 1)"
+            :disabled="currentPage === 1"
+            class="w-10 h-10 rounded-xl flex items-center justify-center transition-colors bg-white/10 text-white hover:bg-white/20 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            <Icon name="mdi:chevron-left" class="w-5 h-5" />
+          </button>
+
+          <!-- First Page -->
+          <button
+            v-if="currentPage > 3"
+            @click="changePage(1)"
+            class="w-10 h-10 rounded-xl flex items-center justify-center transition-colors bg-white/10 text-white hover:bg-white/20"
+          >
+            1
+          </button>
+
+          <!-- Ellipsis -->
+          <span v-if="currentPage > 3" class="text-white/50">...</span>
+
+          <!-- Pages around current -->
+          <button
+            v-for="page in totalPages"
+            :key="page"
+            v-show="page === currentPage || (page >= currentPage - 1 && page <= currentPage + 1)"
+            @click="changePage(page)"
+            :class="[
+              'w-10 h-10 rounded-xl flex items-center justify-center transition-colors',
+              currentPage === page
+                ? 'bg-blue-600 text-white'
+                : 'bg-white/10 text-white hover:bg-white/20'
+            ]"
+          >
+            {{ page }}
+          </button>
+
+          <!-- Ellipsis -->
+          <span v-if="currentPage < totalPages - 2" class="text-white/50">...</span>
+
+          <!-- Last Page -->
+          <button
+            v-if="currentPage < totalPages - 2"
+            @click="changePage(totalPages)"
+            class="w-10 h-10 rounded-xl flex items-center justify-center transition-colors bg-white/10 text-white hover:bg-white/20"
+          >
+            {{ totalPages }}
+          </button>
+
+          <!-- Next Page -->
+          <button
+            @click="changePage(currentPage + 1)"
+            :disabled="currentPage === totalPages"
+            class="w-10 h-10 rounded-xl flex items-center justify-center transition-colors bg-white/10 text-white hover:bg-white/20 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            <Icon name="mdi:chevron-right" class="w-5 h-5" />
+          </button>
+        </div>
+
+        <!-- Empty State -->
+        <div 
+          v-if="paginatedItems.length === 0" 
+          class="text-center py-12"
+        >
+          <Icon name="mdi:movie-off" class="w-12 h-12 text-gray-500 mx-auto mb-4" />
+          <p class="text-gray-400">No items found matching your search.</p>
         </div>
 
         <!-- Features Section -->
@@ -151,15 +274,89 @@ useHead({
 const { getAllTrending } = useTrending()
 const trendingItems = ref<any[]>([])
 
+// Filter and pagination state
+const searchQuery = ref('')
+const activeTab = ref('movies')
+const currentPage = ref(1)
+const itemsPerPage = 10
+const sortBy = ref('rating') // 'rating' or 'title'
+const sortOrder = ref('desc')
+
+// Computed properties for filtered items
+const movies = computed(() => {
+  return trendingItems.value
+    .filter(item => item.type === 'movie')
+    .filter(item => 
+      searchQuery.value === '' || 
+      item.title.toLowerCase().includes(searchQuery.value.toLowerCase())
+    )
+    .sort((a, b) => {
+      if (sortBy.value === 'rating') {
+        return sortOrder.value === 'desc' 
+          ? (b.tmdb_rating || 0) - (a.tmdb_rating || 0)
+          : (a.tmdb_rating || 0) - (b.tmdb_rating || 0)
+      }
+      return sortOrder.value === 'desc'
+        ? b.title.localeCompare(a.title)
+        : a.title.localeCompare(b.title)
+    })
+})
+
+const tvShows = computed(() => {
+  return trendingItems.value
+    .filter(item => item.type === 'tv')
+    .filter(item => 
+      searchQuery.value === '' || 
+      item.title.toLowerCase().includes(searchQuery.value.toLowerCase())
+    )
+    .sort((a, b) => {
+      if (sortBy.value === 'rating') {
+        return sortOrder.value === 'desc' 
+          ? (b.tmdb_rating || 0) - (a.tmdb_rating || 0)
+          : (a.tmdb_rating || 0) - (b.tmdb_rating || 0)
+      }
+      return sortOrder.value === 'desc'
+        ? b.title.localeCompare(a.title)
+        : a.title.localeCompare(b.title)
+    })
+})
+
+// Pagination
+const totalPages = computed(() => {
+  const items = activeTab.value === 'movies' ? movies.value : tvShows.value
+  return Math.ceil(items.length / itemsPerPage)
+})
+
+const paginatedItems = computed(() => {
+  const items = activeTab.value === 'movies' ? movies.value : tvShows.value
+  const start = (currentPage.value - 1) * itemsPerPage
+  return items.slice(start, start + itemsPerPage)
+})
+
+// Handle pagination
+const changePage = (page: number) => {
+  currentPage.value = page
+  window.scrollTo({ top: 0, behavior: 'smooth' })
+}
+
+// Handle sorting
+const toggleSort = (field: string) => {
+  if (sortBy.value === field) {
+    sortOrder.value = sortOrder.value === 'desc' ? 'asc' : 'desc'
+  } else {
+    sortBy.value = field
+    sortOrder.value = 'desc'
+  }
+}
+
 // Load initial trending items
 const loadTrendingItems = async () => {
   try {
     const response = await getAllTrending()
-    // Get top 10 items for preview
+    // Load all items that have a poster and rating
     trendingItems.value = response.data
       .filter((item: any) => item.poster_path && item.tmdb_rating)
       .sort((a: any, b: any) => (b.tmdb_rating || 0) - (a.tmdb_rating || 0))
-      .slice(0, 10)
   } catch (error) {
     console.error('Error loading trending items:', error)
   }
