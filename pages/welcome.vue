@@ -161,6 +161,23 @@
             </div>
           </div>
 
+          <!-- Genre Filters -->
+          <div class="flex flex-wrap gap-2 mt-4">
+            <button
+              v-for="genre in availableGenres"
+              :key="genre"
+              @click="toggleGenre(genre)"
+              :class="[
+                'px-3 py-1.5 rounded-full text-sm font-medium transition-colors',
+                selectedGenres.includes(genre)
+                  ? 'bg-blue-500 text-white'
+                  : 'bg-white/10 text-white hover:bg-white/20'
+              ]"
+            >
+              {{ genre }}
+            </button>
+          </div>
+
           <!-- Content Tabs -->
           <div class="flex gap-4 border-b border-white/20">
             <button
@@ -366,6 +383,18 @@ const searchQuery = ref('')
 const sortBy = ref('rating')
 const sortOrder = ref<'asc' | 'desc'>('desc')
 const activeTab = ref('movies')
+const selectedGenres = ref<string[]>([])
+
+// Get unique genres from the data
+const availableGenres = computed(() => {
+  const genreSet = new Set<string>();
+  trendingItems.value.forEach(item => {
+    if (Array.isArray(item.genres)) {
+      item.genres.forEach((genre: string) => genreSet.add(genre));
+    }
+  });
+  return Array.from(genreSet).sort();
+})
 
 const tabs = [
   { id: 'movies', label: 'Movies' },
@@ -378,12 +407,32 @@ const tvShows = computed(() => trendingItems.value.filter(item => item.media_typ
 
 const filteredItems = computed(() => {
   const items = activeTab.value === 'movies' ? movies.value : tvShows.value
-  return items.filter(item => 
-    (item.title || item.name || '')
+  return items.filter(item => {
+    // Title search
+    const titleMatch = (item.title || item.name || '')
       .toLowerCase()
       .includes(searchQuery.value.toLowerCase())
-  )
+    
+    // Genre filtering
+    const genreMatch = selectedGenres.value.length === 0 || (
+      Array.isArray(item.genres) && 
+      selectedGenres.value.every(genre => item.genres.includes(genre))
+    )
+    
+    return titleMatch && genreMatch
+  })
 })
+
+// Genre toggle function
+const toggleGenre = (genre: string) => {
+  const index = selectedGenres.value.indexOf(genre)
+  if (index === -1) {
+    selectedGenres.value.push(genre)
+  } else {
+    selectedGenres.value.splice(index, 1)
+  }
+  currentPage.value = 1 // Reset to first page when filters change
+}
 
 const sortedItems = computed(() => {
   return [...filteredItems.value].sort((a, b) => {
@@ -485,7 +534,6 @@ const handleImageError = (event: Event) => {
   target.style.display = 'none'
 }
 
-// Ensure proper hydration
 // Load data on mount
 onMounted(async () => {
   await nextTick()
