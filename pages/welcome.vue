@@ -335,7 +335,7 @@
 
 <script setup lang="ts">
 import { useTrending } from '~/composables/useTrending'
-import { nextTick } from 'vue'
+import { nextTick, ref, watch, computed } from 'vue'
 import VideoModal from '~/components/VideoModal.vue'
 
 type VideoResult = {
@@ -385,6 +385,11 @@ const sortOrder = ref<'asc' | 'desc'>('desc')
 const activeTab = ref('movies')
 const selectedGenres = ref<string[]>([])
 
+// Reset pagination when any filter changes
+watch([searchQuery, sortBy, sortOrder, activeTab, selectedGenres], () => {
+  currentPage.value = 1
+})
+
 // Get unique genres from the data
 const availableGenres = computed(() => {
   const genreSet = new Set<string>();
@@ -401,25 +406,28 @@ const tabs = [
   { id: 'tvShows', label: 'TV' }
 ]
 
-// Filter and sort functions
-const movies = computed(() => trendingItems.value.filter(item => item.media_type === 'movie'))
-const tvShows = computed(() => trendingItems.value.filter(item => item.media_type === 'tv'))
+// Search and filtering functions
+const filteredBySearch = computed(() => {
+  return trendingItems.value.filter(item => {
+    const searchLower = searchQuery.value.toLowerCase()
+    const title = (item.title || item.name || '').toLowerCase()
+    return searchLower === '' || title.includes(searchLower)
+  })
+})
 
+// Filter by media type after search
+const movies = computed(() => filteredBySearch.value.filter(item => item.media_type === 'movie'))
+const tvShows = computed(() => filteredBySearch.value.filter(item => item.media_type === 'tv'))
+
+// Apply remaining filters
 const filteredItems = computed(() => {
   const items = activeTab.value === 'movies' ? movies.value : tvShows.value
   return items.filter(item => {
-    // Title search
-    const titleMatch = (item.title || item.name || '')
-      .toLowerCase()
-      .includes(searchQuery.value.toLowerCase())
-    
     // Genre filtering
-    const genreMatch = selectedGenres.value.length === 0 || (
+    return selectedGenres.value.length === 0 || (
       Array.isArray(item.genres) && 
       selectedGenres.value.every(genre => item.genres.includes(genre))
     )
-    
-    return titleMatch && genreMatch
   })
 })
 
