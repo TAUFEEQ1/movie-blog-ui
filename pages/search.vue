@@ -92,7 +92,7 @@
                     type="checkbox"
                     value="movie"
                     class="rounded border-gray-300 text-blue-600 focus:ring-blue-500 w-4 h-4"
-                    @change="async () => await applyFilters()"
+                    @change="async () => await applyFilters(true)"
                   />
                   <span class="ml-3 text-sm text-gray-700">Movies</span>
                 </label>
@@ -102,7 +102,7 @@
                     type="checkbox"
                     value="tv"
                     class="rounded border-gray-300 text-blue-600 focus:ring-blue-500 w-4 h-4"
-                    @change="async () => await applyFilters()"
+                    @change="async () => await applyFilters(true)"
                   />
                   <span class="ml-3 text-sm text-gray-700">TV Shows</span>
                 </label>
@@ -194,7 +194,7 @@
                   max="10"
                   step="0.5"
                   class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer slider"
-                  @input="async () => await applyFilters()"
+                  @input="async () => await applyFilters(true)"
                 />
                 <div class="flex justify-between text-xs text-gray-500">
                   <span>0</span>
@@ -210,7 +210,7 @@
               <select
                 v-model="sortBy"
                 class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-base"
-                @change="async () => await applyFilters()"
+                @change="async () => await applyFilters(true)"
               >
                 <option value="trending_rank">Trending Rank</option>
                 <option value="rating_desc">Rating (High to Low)</option>
@@ -495,7 +495,7 @@ const togglePlatform = async (platform: string) => {
   await applyFilters()
 }
 
-const applyFilters = async () => {
+const applyFilters = async (closeMobileFilters = false) => {
   if (!allItems.value || !Array.isArray(allItems.value)) {
     filteredItems.value = []
     return
@@ -559,8 +559,8 @@ const applyFilters = async () => {
   filteredItems.value = items
   currentPage.value = 1
   
-  // Close mobile filters on mobile devices when filters are applied
-  if (window.innerWidth < 1024) {
+  // Only close mobile filters if explicitly requested
+  if (closeMobileFilters && window.innerWidth < 1024) {
     showMobileFilters.value = false
   }
 }
