@@ -444,10 +444,10 @@ const tvShows = computed(() => filteredBySearch.value.filter(item => item.media_
 const filteredItems = computed(() => {
   const items = activeTab.value === 'movies' ? movies.value : tvShows.value
   return items.filter(item => {
-    // Genre filtering
+    // Genre filtering (union/OR)
     return selectedGenres.value.length === 0 || (
-      Array.isArray(item.genres) && 
-      selectedGenres.value.every(genre => item.genres.includes(genre))
+      Array.isArray(item.genres) &&
+      selectedGenres.value.some(genre => item.genres.includes(genre))
     )
   })
 })
