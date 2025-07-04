@@ -161,22 +161,27 @@
             </div>
           </div>
 
-          <!-- Genre Filters: Dropdown on mobile, tag buttons on desktop -->
+          <!-- Genre Filters: Horizontally scrollable buttons on mobile, tag buttons on desktop -->
           <div class="flex flex-wrap gap-2 mt-4">
-            <!-- Mobile: Dropdown multi-select -->
-            <label class="block w-full sm:hidden">
-              <span class="text-white text-sm font-medium mr-2">Genres:</span>
-              <select
-                v-model="selectedGenres"
-                multiple
-                class="w-full px-4 py-2 bg-white/10 backdrop-blur-sm border border-white/20 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-                style="min-height: 2.5rem;"
-              >
-                <option v-for="genre in availableGenres" :key="genre" :value="genre">
+            <!-- Mobile: Horizontally scrollable genre buttons -->
+            <div class="block w-full sm:hidden overflow-x-auto">
+              <div class="flex gap-2 whitespace-nowrap pb-2">
+                <button
+                  v-for="genre in availableGenres"
+                  :key="genre"
+                  @click="toggleGenre(genre)"
+                  :class="[
+                    'px-3 py-1.5 rounded-full text-sm font-medium transition-colors',
+                    selectedGenres.includes(genre)
+                      ? 'bg-blue-500 text-white'
+                      : 'bg-white/10 text-white hover:bg-white/20'
+                  ]"
+                  style="min-width: 80px;"
+                >
                   {{ genre }}
-                </option>
-              </select>
-            </label>
+                </button>
+              </div>
+            </div>
             <!-- Desktop: Tag buttons -->
             <div class="hidden sm:flex flex-wrap gap-2">
               <button
