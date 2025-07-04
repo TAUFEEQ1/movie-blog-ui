@@ -171,12 +171,11 @@
                   :key="genre"
                   @click="toggleGenre(genre)"
                   :class="[
-                    'px-3 py-1.5 rounded-full text-sm font-medium transition-colors',
+                    'w-auto px-3 py-1.5 rounded-full text-sm font-medium transition-colors',
                     selectedGenres.includes(genre)
                       ? 'bg-blue-500 text-white'
                       : 'bg-white/10 text-white hover:bg-white/20'
                   ]"
-                  style="min-width: 80px;"
                 >
                   {{ genre }}
                 </button>
