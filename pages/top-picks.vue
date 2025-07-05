@@ -33,8 +33,36 @@
           </div>
           <!-- Results Section -->
           <div class="flex-1">
-            <div class="mb-8">
-              <h1 class="text-3xl font-bold text-gray-900 mb-2 flex items-center gap-2"><Icon name="mdi:star" class="w-7 h-7 text-yellow-500" /> Editor Top Picks</h1>
+            <!-- Tab Navigation -->
+            <div class="flex border-b border-gray-200 mb-6">
+              <button 
+                @click="activeTab = 'editor'" 
+                :class="[
+                  'flex items-center gap-2 px-4 py-3 text-lg font-medium border-b-2 transition-colors',
+                  activeTab === 'editor' 
+                    ? 'border-yellow-500 text-gray-900' 
+                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                ]"
+              >
+                <Icon name="mdi:star" class="w-6 h-6 text-yellow-500" />
+                Editor Top Picks
+              </button>
+              <button 
+                @click="activeTab = 'ai'" 
+                :class="[
+                  'flex items-center gap-2 px-4 py-3 text-lg font-medium border-b-2 transition-colors',
+                  activeTab === 'ai' 
+                    ? 'border-blue-500 text-gray-900' 
+                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                ]"
+              >
+                <Icon name="mdi:robot" class="w-6 h-6 text-blue-500" />
+                AI Top Picks
+              </button>
+            </div>
+            
+            <!-- Editor Top Picks Tab Content -->
+            <div v-show="activeTab === 'editor'">
               <div v-if="filteredEditorPicks.length === 0" class="text-gray-500 py-8 text-center">No editor top picks found.</div>
               <div v-else>
                 <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 lg:gap-6">
@@ -42,8 +70,9 @@
                 </div>
               </div>
             </div>
-            <div>
-              <h1 class="text-3xl font-bold text-gray-900 mb-2 flex items-center gap-2"><Icon name="mdi:robot" class="w-7 h-7 text-blue-500" /> AI Top Picks</h1>
+            
+            <!-- AI Top Picks Tab Content -->
+            <div v-show="activeTab === 'ai'">
               <div v-if="filteredAiPicks.length === 0" class="text-gray-500 py-8 text-center">No AI top picks found.</div>
               <div v-else>
                 <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 lg:gap-6">
@@ -73,6 +102,7 @@ const currentVideoUrl = ref('')
 const editorPicks = ref<any[]>([])
 const aiPicks = ref<any[]>([])
 const genres = ref<string[]>(['All'])
+const activeTab = ref('editor') // 'editor' or 'ai'
 
 // Filtered lists
 const filteredEditorPicks = computed(() => {
@@ -86,6 +116,7 @@ const filteredEditorPicks = computed(() => {
   }
   return items
 })
+
 const filteredAiPicks = computed(() => {
   let items = aiPicks.value
   if (selectedGenre.value !== 'All') {
