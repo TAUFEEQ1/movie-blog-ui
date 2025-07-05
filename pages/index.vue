@@ -381,7 +381,7 @@ definePageMeta({
 
 // Import composables
 const { user } = useAuth()
-const { getAllTrending } = useTrending()
+const { getAllTrending, getTopPicks } = useTrending()
 const { getComingSoonItems, getTmdbPosterUrl } = useComingSoon()
 const { fetchWatchlist, removeFromWatchlistByTmdbId, watchlistItems: watchlistData } = useWatchlist()
 
@@ -685,11 +685,9 @@ interface TrendingItemWithScore extends TrendingItem {
 const fetchTopPicks = async () => {
   try {
     loading.value = true
-    // Always use authenticated request for top picks
-    const response = await getAllTrending({ forceApi: true })
-    // Sort by combined_score if present, else fallback to tmdb_rating
-  
-    topPicks.value = response.data.slice(0,8);
+    // Fetch from /api/top-picks
+    const picks = await getTopPicks()
+    topPicks.value = picks.slice(0, 8)
   } catch (error) {
     console.error('Error fetching top picks:', error)
   } finally {

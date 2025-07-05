@@ -385,6 +385,33 @@ export const useTrending = () => {
     }
   }
 
+  // Fetch top picks from /api/top-picks
+  const getTopPicks = async (): Promise<TrendingItem[]> => {
+    try {
+      const strapiUrl = config.public.strapiUrl || 'http://localhost:1337'
+      const headers: any = {
+        'Content-Type': 'application/json',
+      }
+      if (token.value) {
+        headers['Authorization'] = `Bearer ${token.value}`
+      }
+      const response = await $fetch(`${strapiUrl}/api/top-picks`, { headers })
+      // If the API returns { data: TrendingItem[] }, extract data
+      if (response && Array.isArray((response as any).data)) {
+        return (response as any).data
+      }
+      // If the API returns an array directly
+      if (Array.isArray(response)) {
+        return response
+      }
+      return []
+    } catch (error) {
+      console.error('Error fetching top picks:', error)
+      // Fallback to top 8 from mockTrendingData
+      return mockTrendingData.slice(0, 8)
+    }
+  }
+
   return {
     getTrendingByPlatform,
     getAllTrending,
@@ -392,6 +419,7 @@ export const useTrending = () => {
     getTrendingByPlatformForUI,
     findTrendingByTmdbId,
     transformTrendingToMovie,
-    truncateTitle
+    truncateTitle,
+    getTopPicks // <-- export new method
   }
 }
