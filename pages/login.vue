@@ -204,9 +204,20 @@ definePageMeta({
 })
 
 // Import composables
-const { login } = useAuth()
+const { login, isAuthenticated } = useAuth()
 const { getAllTrending } = useTrending()
 const router = useRouter()
+
+// Check if user is already logged in and redirect
+onMounted(async () => {
+  if (isAuthenticated.value) {
+    console.log('User already authenticated, redirecting to home')
+    await router.push('/')
+    return
+  }
+  
+  fetchTrendingShowcase()
+})
 
 // Form state
 const form = reactive({
@@ -365,11 +376,6 @@ const handleImageError = (event: Event) => {
   // Use a default placeholder or hide the image
   target.style.display = 'none'
 }
-
-// Initialize on mount
-onMounted(() => {
-  fetchTrendingShowcase()
-})
 
 // Cleanup on unmount
 onUnmounted(() => {
