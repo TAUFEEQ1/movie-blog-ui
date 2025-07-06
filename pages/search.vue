@@ -329,13 +329,21 @@
                         <span class="text-xs lg:text-sm font-medium">{{ item.tmdb_rating?.toFixed(1) || 'N/A' }}</span>
                       </div>
                     </div>
-                    <button
-                      v-if="item.trailer_url"
-                      @click="playTrailer(item.trailer_url)"
-                      class="p-2 lg:p-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors flex-shrink-0"
-                    >
-                      <Icon name="mdi:play" class="w-4 h-4 lg:w-5 lg:h-5" />
-                    </button>
+                    <div class="flex items-center gap-2">
+                      <button
+                        v-if="item.trailer_url"
+                        @click="playTrailer(item.trailer_url)"
+                        class="p-2 lg:p-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors flex-shrink-0"
+                      >
+                        <Icon name="mdi:play" class="w-4 h-4 lg:w-5 lg:h-5" />
+                      </button>
+                      <button
+                        @click="addToWishlist(item)"
+                        class="p-2 lg:p-3 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg transition-colors flex-shrink-0"
+                      >
+                        <Icon name="mdi:bookmark-plus" class="w-4 h-4 lg:w-5 lg:h-5" />
+                      </button>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -383,6 +391,14 @@
       @close="showKeywordModal = false"
       @apply="onKeywordsApplied"
     />
+    
+    <!-- Watchlist Modal -->
+    <WatchlistModal
+      :is-open="isWatchlistModalOpen"
+      :movie-data="selectedMovieForWatchlist"
+      @close="closeWatchlistModal"
+      @added="handleWatchlistAdded"
+    />
   </div>
 </template>
 
@@ -397,6 +413,7 @@ definePageMeta({
 // Composables
 const { getAllTrending } = useTrending()
 const { filterItemsByKeywords, extractKeywordsFromItems } = useBackendKeywords()
+const { addToWatchlist, fetchWatchlist, watchlistItems: watchlistData } = useWatchlist()
 
 // State
 const showMobileMenu = ref(false)
@@ -417,6 +434,8 @@ const itemsPerPage = 8
 
 // Modal state
 const showKeywordModal = ref(false)
+const isWatchlistModalOpen = ref(false)
+const selectedMovieForWatchlist = ref<TrendingItem | null>(null)
 
 // Video modal state
 const isVideoModalOpen = ref(false)
@@ -584,8 +603,9 @@ const playTrailer = (trailerUrl: string) => {
 }
 
 const addToWishlist = (item: TrendingItem) => {
-  // TODO: Implement wishlist functionality
-  console.log('Adding to wishlist:', item.title)
+  console.log('Adding to watchlist:', item.title)
+  selectedMovieForWatchlist.value = item
+  isWatchlistModalOpen.value = true
 }
 
 const openKeywordModal = () => {
@@ -616,14 +636,42 @@ const closeVideoModal = () => {
   currentVideoUrl.value = ''
 }
 
+const closeWatchlistModal = () => {
+  isWatchlistModalOpen.value = false
+  selectedMovieForWatchlist.value = null
+}
+
+const handleWatchlistAdded = async () => {
+  // Refresh watchlist data
+  await loadWatchlistData()
+  
+  closeWatchlistModal()
+  
+  // You could display a toast notification here
+  console.log('Successfully added to watchlist!')
+}
+
 const handleImageError = (event: Event) => {
   const target = event.target as HTMLImageElement
   target.src = '/images/default-poster.jpg'
 }
 
+// Load watchlist data
+const loadWatchlistData = async () => {
+  try {
+    await fetchWatchlist()
+    console.log('Watchlist loaded:', watchlistData.value?.length || 0, 'items')
+  } catch (error) {
+    console.error('Error loading watchlist data:', error)
+  }
+}
+
 // Lifecycle
-onMounted(() => {
-  fetchTrendingItems()
+onMounted(async () => {
+  await Promise.all([
+    fetchTrendingItems(),
+    loadWatchlistData()
+  ])
 })
 
 // Watch for page changes to reset pagination
