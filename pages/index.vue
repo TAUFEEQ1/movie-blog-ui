@@ -276,19 +276,52 @@
                   </select>
                 </div>
               </div>
+
+              <!-- Trending Tabs -->
+              <div class="flex items-center gap-4 mb-6 border-b border-gray-200">
+                <button
+                  v-for="tab in trendingTabs"
+                  :key="tab.value"
+                  @click="currentTrendingTab = tab.value"
+                  class="px-4 py-2 text-sm font-medium transition-colors relative"
+                  :class="[
+                    currentTrendingTab === tab.value
+                      ? 'text-blue-600 border-b-2 border-blue-600'
+                      : 'text-gray-500 hover:text-gray-700'
+                  ]"
+                >
+                  {{ tab.label }}
+                  <span 
+                    v-if="tab.count" 
+                    class="ml-2 px-2 py-0.5 text-xs bg-gray-100 text-gray-600 rounded-full"
+                  >
+                    {{ tab.count }}
+                  </span>
+                </button>
+              </div>
               
               <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-4 gap-6">
                 <TrendingCard 
-                  v-for="item in paginatedItems" 
+                  v-for="item in displayedItems" 
                   :key="`${item.tmdb_id}-${item.type}`"
                   :item="item"
                   @play-trailer="playTrailer"
                   @add-to-wishlist="addToWatchlist"
                 />
+
+                <!-- Empty State -->
+                <div 
+                  v-if="displayedItems.length === 0" 
+                  class="col-span-full text-center py-12"
+                >
+                  <Icon name="mdi:movie-open-off" class="w-12 h-12 text-gray-300 mx-auto mb-3" />
+                  <p class="text-gray-500">No trending items found for this period</p>
+                  <p class="text-gray-400 text-sm mt-1">Try changing your filters or check back later</p>
+                </div>
               </div>
 
               <!-- Load More Button -->
-              <div v-if="showPagination" class="text-center mt-8">
+              <div v-if="showPagination && displayedItems.length > 0" class="text-center mt-8">
                 <button
                   @click="loadMoreTrending"
                   :disabled="loading"
@@ -424,7 +457,6 @@ const selectedMovieForWatchlist = ref<any>(null)
 // Trending State
 const loading = ref(false)
 const trendingItems = ref<any[]>([])
-const displayedItems = ref<any[]>([])
 const paginatedItems = ref<any[]>([])
 const topPicks = ref<any[]>([])
 const wishlistItems = ref<any[]>([])
@@ -446,40 +478,50 @@ const sortOrder = ref('rating_desc')
 const currentPage = ref(1)
 const itemsPerPage = ref(20)
 
-// Hero pool for rotation
-const heroPool: any[] = []
-
-// Movie data interface
-interface Movie {
-  id: number
-  title: string
-  poster: string
-  rating: number
-  genres: string[]
-  year: number
-  duration: string
-  trailerUrl: string
-}
-
-// Sample movie data - replace with API calls later
-const trendingMovies = ref<Movie[]>([])
-const comingSoonMovies = ref<Movie[]>([])
-
-// Convert Coming Soon API data to Movie interface format
-const convertComingSoonToMovie = (comingSoonItem: any): Movie => {
-  return {
-    id: comingSoonItem.id,
-    title: comingSoonItem.title,
-    poster: getTmdbPosterUrl(comingSoonItem.poster_path),
-    rating: comingSoonItem.tmdb_rating || 0,
-    genres: comingSoonItem.genres || [],
-    year: new Date(comingSoonItem.release_date).getFullYear(),
-    duration: comingSoonItem.runtime ? `${Math.floor(comingSoonItem.runtime / 60)}h ${comingSoonItem.runtime % 60}m` : 'TBA',
-    trailerUrl: comingSoonItem.trailer_url || ''
+// Trending Tabs State
+const currentTrendingTab = ref('this-month')
+const trendingTabs = computed(() => [
+  { 
+    label: 'This Month', 
+    value: 'this-month',
+    count: currentMonthItems.value.length
+  },
+  { 
+    label: 'Last Month', 
+    value: 'last-month',
+    count: lastMonthItems.value.length
   }
-}
+])
 
-// Load trending data on mount
+// Filter trending items by faded_on date
+const currentMonthItems = computed(() => {
+  const now = new Date()
+  const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1)
+  const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0)
+  
+  return paginatedItems.value.filter(item => {
+    const fadedOn = new Date(item.faded_on)
+    return fadedOn >= startOfMonth && fadedOn <= endOfMonth
+  })
+})
+
+const lastMonthItems = computed(() => {
+  const now = new Date()
+  const startOfLastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1)
+  const endOfLastMonth = new Date(now.getFullYear(), now.getMonth(), 0)
+  
+  return paginatedItems.value.filter(item => {
+    const fadedOn = new Date(item.faded_on)
+    return fadedOn >= startOfLastMonth && fadedOn <= endOfLastMonth
+  })
+})
+
+// Display items based on selected tab
+const displayedItems = computed(() => {
+  return currentTrendingTab.value === 'this-month' 
+    ? currentMonthItems.value 
+    : lastMonthItems.value
+})
 
 // Event Handlers
 const closeVideoModal = () => {
@@ -597,6 +639,8 @@ const playTrailer = (trailerUrl: string) => {
 
 // Filter and sorting methods
 const applyFilters = () => {
+  if (!trendingItems.value.length) return;
+  
   let filtered = [...trendingItems.value]
 
   // Apply type filter
@@ -604,13 +648,56 @@ const applyFilters = () => {
     filtered = filtered.filter(item => item.type === selectedType.value)
   }
 
-  displayedItems.value = filtered
-  
+  // Apply trending tab filter based on faded_on dates
+  const now = new Date()
+  if (currentTrendingTab.value === 'this-month') {
+    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1)
+    const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0)
+    filtered = filtered.filter(item => {
+      const fadedOn = item.faded_on ? new Date(item.faded_on) : null
+      return fadedOn && fadedOn >= startOfMonth && fadedOn <= endOfMonth
+    })
+  } else if (currentTrendingTab.value === 'last-month') {
+    const startOfLastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1)
+    const endOfLastMonth = new Date(now.getFullYear(), now.getMonth(), 0)
+    filtered = filtered.filter(item => {
+      const fadedOn = item.faded_on ? new Date(item.faded_on) : null
+      return fadedOn && fadedOn >= startOfLastMonth && fadedOn <= endOfLastMonth
+    })
+  }
+
   // Reset to first page when filters change
   currentPage.value = 1
+
+  // Update paginatedItems based on filtered and sorted items
+  let sorted = [...filtered]
+  switch (sortOrder.value) {
+    case 'rating_desc':
+      sorted.sort((a, b) => (b.tmdb_rating || 0) - (a.tmdb_rating || 0))
+      break
+    case 'rating_asc':
+      sorted.sort((a, b) => (a.tmdb_rating || 0) - (b.tmdb_rating || 0))
+      break
+    case 'trending_rank':
+      sorted.sort((a, b) => (a.trending_rank || 999) - (b.trending_rank || 999))
+      break
+    case 'release_date':
+      sorted.sort((a, b) => {
+        const dateA = new Date(a.release_date || '1900-01-01').getTime()
+        const dateB = new Date(b.release_date || '1900-01-01').getTime()
+        return dateB - dateA
+      })
+      break
+    case 'title':
+      sorted.sort((a, b) => a.title.localeCompare(b.title))
+      break
+  }
   
-  sortItems()
-  updatePagination()
+  // Update the paginated items
+  paginatedItems.value = sorted
+
+  // No need to call updatePagination() since displayedItems computed property 
+  // will handle the pagination based on currentPage and itemsPerPage
 }
 
 const updatePagination = () => {
@@ -668,6 +755,9 @@ const showPagination = computed(() => {
 })
 
 // Data fetching
+// Declare heroPool to store trending items for the hero section
+const heroPool: any[] = []
+
 const fetchTrendingItems = async () => {
   try {
     loading.value = true
@@ -675,15 +765,20 @@ const fetchTrendingItems = async () => {
     // Fetch all trending items without pagination
     const response = await getAllTrending()
     
+    // Set all items first
     trendingItems.value = response.data
-    heroPool.push(...response.data)
+    paginatedItems.value = response.data
     
-    // Set hero items from first few trending items
+    // Set up hero section
     if (response.data.length > 0) {
-      heroItems.value = heroPool.slice(0, 5)
+      const potentialHeroItems = response.data
+        .filter(item => item.backdrop_path && (item.trailer_url || item.type === 'tv'))
+        .slice(0, 5)
+      heroItems.value = potentialHeroItems
       currentHeroItem.value = heroItems.value[0]
     }
 
+    // Apply initial filters after data is loaded
     applyFilters()
   } catch (error) {
     console.error('Error fetching trending items:', error)
