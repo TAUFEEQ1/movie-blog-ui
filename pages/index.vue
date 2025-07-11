@@ -227,15 +227,31 @@
                 </button>
               </div>
               
-              <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-                <TrendingCard 
+              <Carousel 
+                :items-to-show="isMobile ? 1 : 3"
+                :wrap-around="true"
+                :touch-drag="true"
+                :mouse-drag="true"
+                :autoplay="5000"
+                pause-autoplay-on-hover
+                class="top-picks-carousel"
+              >
+                <template #addons>
+                  <Navigation />
+                  <Pagination />
+                </template>
+                <Slide 
                   v-for="item in topPicks" 
                   :key="`top-pick-${item.tmdb_id}`"
-                  :item="item"
-                  @play-trailer="playTrailer"
-                  @add-to-wishlist="addToWatchlist"
-                />
-              </div>
+                  class="p-2"
+                >
+                  <TrendingCard 
+                    :item="item"
+                    @play-trailer="playTrailer"
+                    @add-to-wishlist="addToWatchlist"
+                  />
+                </Slide>
+              </Carousel>
             </div>
 
             <!-- All Trending Content -->
@@ -746,7 +762,7 @@ const truncate = (text: string, max: number) => {
 // Import additional libraries
 import { ref, computed, onMounted, onUnmounted, nextTick } from 'vue'
 import { useWindowSize } from '@vueuse/core'
-import { Carousel } from 'vue3-carousel'
+import { Carousel, Navigation, Pagination, Slide } from 'vue3-carousel'
 import 'vue3-carousel/dist/carousel.css'
 
 // Responsive check for mobile
@@ -799,3 +815,46 @@ const handleTouchEnd = () => {
   swipeDirection.value = null
 }
 </script>
+
+<style>
+.top-picks-carousel .carousel__slide {
+  padding: 1rem;
+}
+
+.top-picks-carousel .carousel__prev,
+.top-picks-carousel .carousel__next {
+  background-color: rgba(0, 0, 0, 0.5);
+  border-radius: 50%;
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  cursor: pointer;
+  transition: background-color 0.3s;
+}
+
+.top-picks-carousel .carousel__prev:hover,
+.top-picks-carousel .carousel__next:hover {
+  background-color: rgba(0, 0, 0, 0.7);
+}
+
+.top-picks-carousel .carousel__pagination {
+  margin-top: 1rem;
+}
+
+.top-picks-carousel .carousel__pagination-button {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background-color: #e5e7eb;
+  margin: 0 4px;
+  transition: transform 0.3s, background-color 0.3s;
+}
+
+.top-picks-carousel .carousel__pagination-button--active {
+  transform: scale(1.2);
+  background-color: #3b82f6;
+}
+</style>
