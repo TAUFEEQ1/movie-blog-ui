@@ -559,11 +559,10 @@ const trendingTabs = computed(() => [
 const currentMonthItems = computed(() => {
   const now = new Date()
   const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1)
-  const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0)
   
   return paginatedItems.value.filter(item => {
     const fadedOn = new Date(item.faded_on)
-    return fadedOn >= startOfMonth && fadedOn <= endOfMonth
+    return fadedOn >= startOfMonth
   })
 })
 
