@@ -255,7 +255,10 @@
             </div>
 
             <!-- All Trending Content -->
-            <div class="bg-white rounded-2xl p-6">
+            <div 
+              class="bg-white rounded-2xl p-6"
+              ref="trendingSection"
+            >
               <div class="flex items-center justify-between mb-6">
                 <div class="flex items-center gap-3">
                   <Icon name="mdi:fire" class="w-6 h-6 text-orange-500" />
@@ -263,8 +266,8 @@
                   <span class="text-sm text-gray-500">Updated within 48 hours</span>
                 </div>
                 
-                <!-- Filter Controls -->
-                <div class="flex items-center gap-3">
+                <!-- Filter Controls - Hidden on mobile -->
+                <div class="hidden md:flex items-center gap-3">
                   <select 
                     v-model="selectedType" 
                     @change="applyFilters"
@@ -414,6 +417,65 @@
       @close="closeWatchlistModal"
       @added="handleWatchlistAdded"
     />
+
+    <!-- Filter Modal (Mobile Only) -->
+    <div
+      v-if="isMobile && isFilterModalOpen"
+      class="fixed inset-0 z-50 lg:hidden"
+    >
+      <!-- Backdrop -->
+      <div 
+        class="absolute inset-0 bg-black bg-opacity-50"
+        @click="isFilterModalOpen = false"
+      ></div>
+      
+      <!-- Modal Content -->
+      <div class="absolute bottom-0 left-0 right-0 bg-white rounded-t-2xl p-6 transform transition-transform duration-300">
+        <div class="flex items-center justify-between mb-6">
+          <h3 class="text-lg font-bold">Filter Content</h3>
+          <button 
+            @click="isFilterModalOpen = false"
+            class="p-2 text-gray-400 hover:text-gray-600"
+          >
+            <Icon name="mdi:close" class="w-6 h-6" />
+          </button>
+        </div>
+
+        <!-- Filter Options -->
+        <div class="space-y-4">
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-2">Content Type</label>
+            <select 
+              v-model="selectedType" 
+              @change="applyFiltersAndCloseModal"
+              class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+            >
+              <option value="">All Types</option>
+              <option value="movie">Movies</option>
+              <option value="tv">TV Shows</option>
+            </select>
+          </div>
+
+          <!-- Apply Button -->
+          <button
+            @click="applyFiltersAndCloseModal"
+            class="w-full bg-blue-600 text-white py-3 rounded-lg font-semibold hover:bg-blue-700 transition-colors"
+          >
+            Apply Filters
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Floating Filter Button (Mobile Only) -->
+    <button
+      v-if="isMobile && showFilterFab"
+      @click="isFilterModalOpen = true"
+      class="fixed bottom-6 right-6 z-50 bg-blue-600 text-white rounded-full p-4 shadow-lg flex items-center gap-2 hover:bg-blue-700 transition-all transform scale-100 hover:scale-105"
+    >
+      <Icon name="mdi:filter-variant" class="w-5 h-5" />
+      <span>Filters</span>
+    </button>
   </div>
 </template>
 
@@ -909,6 +971,37 @@ const handleTouchEnd = () => {
   isSwiping.value = false
   swipeDirection.value = null
 }
+
+// Filter Modal State
+const isFilterModalOpen = ref(false)
+const showFilterFab = ref(false)
+const trendingSection = ref<HTMLElement | null>(null)
+
+// Scroll handler for filter FAB
+const handleScroll = () => {
+  if (!trendingSection.value || !isMobile.value) return
+  
+  const rect = trendingSection.value.getBoundingClientRect()
+  const threshold = window.innerHeight * 0.3 // Show FAB when 30% of viewport height is reached
+  
+  // Show FAB when trending section is in view and user has scrolled past threshold
+  showFilterFab.value = rect.top <= threshold && rect.bottom > 0
+}
+
+// Apply filters and close modal
+const applyFiltersAndCloseModal = () => {
+  applyFilters()
+  isFilterModalOpen.value = false
+}
+
+// Add scroll event listener
+onMounted(() => {
+  window.addEventListener('scroll', handleScroll, { passive: true })
+})
+
+onUnmounted(() => {
+  window.removeEventListener('scroll', handleScroll)
+})
 </script>
 
 <style>
@@ -951,5 +1044,47 @@ const handleTouchEnd = () => {
 .top-picks-carousel .carousel__pagination-button--active {
   transform: scale(1.2);
   background-color: #3b82f6;
+}
+
+/* Filter FAB and Modal Animations */
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes slideUp {
+  from { transform: translateY(100%); }
+  to { transform: translateY(0); }
+}
+
+.filter-fab-enter-active,
+.filter-fab-leave-active {
+  transition: all 0.3s ease;
+}
+
+.filter-fab-enter-from,
+.filter-fab-leave-to {
+  opacity: 0;
+  transform: scale(0.9) translateY(20px);
+}
+
+.modal-backdrop-enter-active,
+.modal-backdrop-leave-active {
+  transition: opacity 0.3s ease;
+}
+
+.modal-backdrop-enter-from,
+.modal-backdrop-leave-to {
+  opacity: 0;
+}
+
+.modal-content-enter-active,
+.modal-content-leave-active {
+  transition: transform 0.3s ease;
+}
+
+.modal-content-enter-from,
+.modal-content-leave-to {
+  transform: translateY(100%);
 }
 </style>
