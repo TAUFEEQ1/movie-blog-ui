@@ -713,10 +713,9 @@ const applyFilters = () => {
   const now = new Date()
   if (currentTrendingTab.value === 'this-month') {
     const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1)
-    const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0)
     filtered = filtered.filter(item => {
       const fadedOn = item.faded_on ? new Date(item.faded_on) : null
-      return fadedOn && fadedOn >= startOfMonth && fadedOn <= endOfMonth
+      return fadedOn && fadedOn >= startOfMonth;
     })
   } else if (currentTrendingTab.value === 'last-month') {
     const startOfLastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1)
