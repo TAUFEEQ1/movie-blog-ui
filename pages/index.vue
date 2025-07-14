@@ -979,27 +979,73 @@ onUnmounted(() => {
 </script>
 
 <style>
-.top-picks-carousel .carousel__slide {
+.top-picks-carousel .carousel__slide,
+.trending-carousel .carousel__slide {
   padding: 1rem;
 }
 
-.top-picks-carousel .carousel__prev,
-.top-picks-carousel .carousel__next {
-  background-color: rgba(0, 0, 0, 0.5);
-  border-radius: 50%;
-  width: 40px;
-  height: 40px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: white;
-  cursor: pointer;
-  transition: background-color 0.3s;
+/* Carousel Navigation Buttons - Desktop */
+@media (min-width: 1024px) {
+  .top-picks-carousel .carousel__prev,
+  .top-picks-carousel .carousel__next,
+  .trending-carousel .carousel__prev,
+  .trending-carousel .carousel__next {
+    background-color: #3b82f6;
+    border-radius: 50%;
+    width: 44px;
+    height: 44px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    border: 2px solid transparent;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  }
+
+  .top-picks-carousel .carousel__prev:hover,
+  .top-picks-carousel .carousel__next:hover,
+  .trending-carousel .carousel__prev:hover,
+  .trending-carousel .carousel__next:hover {
+    background-color: #2563eb;
+    transform: scale(1.05);
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  }
+
+  .top-picks-carousel .carousel__prev:focus,
+  .top-picks-carousel .carousel__next:focus,
+  .trending-carousel .carousel__prev:focus,
+  .trending-carousel .carousel__next:focus {
+    border-color: #60a5fa;
+    outline: none;
+  }
 }
 
-.top-picks-carousel .carousel__prev:hover,
-.top-picks-carousel .carousel__next:hover {
-  background-color: rgba(0, 0, 0, 0.7);
+/* Carousel Navigation Buttons - Mobile */
+@media (max-width: 1023px) {
+  .top-picks-carousel .carousel__prev,
+  .top-picks-carousel .carousel__next,
+  .trending-carousel .carousel__prev,
+  .trending-carousel .carousel__next {
+    background-color: rgba(0, 0, 0, 0.5);
+    border-radius: 50%;
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    cursor: pointer;
+    transition: background-color 0.3s;
+  }
+
+  .top-picks-carousel .carousel__prev:hover,
+  .top-picks-carousel .carousel__next:hover,
+  .trending-carousel .carousel__prev:hover,
+  .trending-carousel .carousel__next:hover {
+    background-color: rgba(0, 0, 0, 0.7);
+  }
 }
 
 .top-picks-carousel .carousel__pagination {
