@@ -280,62 +280,72 @@
                 </div>
               </div>
 
-              <!-- Trending Tabs -->
-              <div class="flex items-center gap-4 mb-6 border-b border-gray-200">
-                <button
-                  v-for="tab in trendingTabs"
-                  :key="tab.value"
-                  @click="currentTrendingTab = tab.value"
-                  class="px-4 py-2 text-sm font-medium transition-colors relative"
-                  :class="[
-                    currentTrendingTab === tab.value
-                      ? 'text-blue-600 border-b-2 border-blue-600'
-                      : 'text-gray-500 hover:text-gray-700'
-                  ]"
-                >
-                  {{ tab.label }}
-                  <span 
-                    v-if="tab.count" 
-                    class="ml-2 px-2 py-0.5 text-xs bg-gray-100 text-gray-600 rounded-full"
-                  >
-                    {{ tab.count }}
-                  </span>
-                </button>
-              </div>
+
               
-              <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-4 gap-6">
-                <TrendingCard 
-                  v-for="item in displayedItems" 
-                  :key="`${item.tmdb_id}-${item.type}`"
-                  :item="item"
-                  @play-trailer="playTrailer"
-                  @add-to-wishlist="addToWatchlist"
-                />
-
-                <!-- Empty State -->
-                <div 
-                  v-if="displayedItems.length === 0" 
-                  class="col-span-full text-center py-12"
+              <!-- Current Month Carousel -->
+              <div v-if="currentMonthItems.length > 0" class="mb-8">
+                <h3 class="text-lg font-medium text-gray-800 mb-4">This Month</h3>
+                <Carousel 
+                  :items-to-show="isMobile ? 1.2 : 4.2"
+                  :wrap-around="false"
+                  :touch-drag="true"
+                  :mouse-drag="true"
+                  snap-align="start"
+                  class="trending-carousel"
                 >
-                  <Icon name="mdi:movie-open-off" class="w-12 h-12 text-gray-300 mx-auto mb-3" />
-                  <p class="text-gray-500">No trending items found for this period</p>
-                  <p class="text-gray-400 text-sm mt-1">Try changing your filters or check back later</p>
-                </div>
+                  <template #addons>
+                    <Navigation />
+                  </template>
+                  <Slide 
+                    v-for="item in currentMonthItems" 
+                    :key="`current-${item.tmdb_id}-${item.type}`"
+                    class="pr-4"
+                  >
+                    <TrendingCard 
+                      :item="item"
+                      @play-trailer="playTrailer"
+                      @add-to-wishlist="addToWatchlist"
+                    />
+                  </Slide>
+                </Carousel>
               </div>
 
-              <!-- Load More Button -->
-              <div v-if="showPagination && displayedItems.length > 0" class="text-center mt-8">
-                <button
-                  @click="loadMoreTrending"
-                  :disabled="loading"
-                  class="px-8 py-3 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed text-white rounded-lg font-semibold transition-colors flex items-center gap-2 mx-auto"
+              <!-- Last Month Carousel -->
+              <div v-if="lastMonthItems.length > 0" class="mb-8">
+                <h3 class="text-lg font-medium text-gray-800 mb-4">Last Month</h3>
+                <Carousel 
+                  :items-to-show="isMobile ? 1.2 : 4.2"
+                  :wrap-around="false"
+                  :touch-drag="true"
+                  :mouse-drag="true"
+                  snap-align="start"
+                  class="trending-carousel"
                 >
-                  <Icon 
-                    :name="loading ? 'mdi:loading' : 'mdi:plus'" 
-                    :class="['w-5 h-5', { 'animate-spin': loading }]" 
-                  />
-                  {{ loading ? 'Loading...' : 'Load More' }}
-                </button>
+                  <template #addons>
+                    <Navigation />
+                  </template>
+                  <Slide 
+                    v-for="item in lastMonthItems" 
+                    :key="`last-${item.tmdb_id}-${item.type}`"
+                    class="pr-4"
+                  >
+                    <TrendingCard 
+                      :item="item"
+                      @play-trailer="playTrailer"
+                      @add-to-wishlist="addToWatchlist"
+                    />
+                  </Slide>
+                </Carousel>
+              </div>
+
+              <!-- Empty State -->
+              <div 
+                v-if="currentMonthItems.length === 0 && lastMonthItems.length === 0" 
+                class="text-center py-12"
+              >
+                <Icon name="mdi:movie-open-off" class="w-12 h-12 text-gray-300 mx-auto mb-3" />
+                <p class="text-gray-500">No trending items found for this period</p>
+                <p class="text-gray-400 text-sm mt-1">Try changing your filters or check back later</p>
               </div>
             </div>
           </div>
@@ -538,22 +548,7 @@ const selectedType = ref('')
 const selectedPlatform = ref('')
 const sortOrder = ref('rating_desc')
 const currentPage = ref(1)
-const itemsPerPage = ref(20)
-
-// Trending Tabs State
-const currentTrendingTab = ref('this-month')
-const trendingTabs = computed(() => [
-  { 
-    label: 'This Month', 
-    value: 'this-month',
-    count: currentMonthItems.value.length
-  },
-  { 
-    label: 'Last Month', 
-    value: 'last-month',
-    count: lastMonthItems.value.length
-  }
-])
+const itemsPerPage = ref(8) // Changed from 20 to 8 items per page
 
 // Filter trending items by faded_on date
 const currentMonthItems = computed(() => {
@@ -577,12 +572,8 @@ const lastMonthItems = computed(() => {
   })
 })
 
-// Display items based on selected tab
-const displayedItems = computed(() => {
-  return currentTrendingTab.value === 'this-month' 
-    ? currentMonthItems.value 
-    : lastMonthItems.value
-})
+// Get all items for display
+const displayedItems = computed(() => [...currentMonthItems.value, ...lastMonthItems.value])
 
 // Event Handlers
 const closeVideoModal = () => {
@@ -709,22 +700,7 @@ const applyFilters = () => {
     filtered = filtered.filter(item => item.type === selectedType.value)
   }
 
-  // Apply trending tab filter based on faded_on dates
-  const now = new Date()
-  if (currentTrendingTab.value === 'this-month') {
-    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1)
-    filtered = filtered.filter(item => {
-      const fadedOn = item.faded_on ? new Date(item.faded_on) : null
-      return fadedOn && fadedOn >= startOfMonth;
-    })
-  } else if (currentTrendingTab.value === 'last-month') {
-    const startOfLastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1)
-    const endOfLastMonth = new Date(now.getFullYear(), now.getMonth(), 0)
-    filtered = filtered.filter(item => {
-      const fadedOn = item.faded_on ? new Date(item.faded_on) : null
-      return fadedOn && fadedOn >= startOfLastMonth && fadedOn <= endOfLastMonth
-    })
-  }
+  // No need to filter by tabs anymore since we show all items in separate carousels
 
   // Reset to first page when filters change
   currentPage.value = 1
@@ -804,8 +780,8 @@ const shuffleTopPicks = () => {
 }
 
 const loadMoreTrending = () => {
-  // Increase items per page to show more
-  itemsPerPage.value += 20
+  // Increase items per page by 8
+  itemsPerPage.value += 8
   updatePagination()
 }
 
