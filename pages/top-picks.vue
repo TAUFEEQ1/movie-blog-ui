@@ -84,6 +84,14 @@
         </div>
         <!-- Video Modal -->
         <VideoModal :is-open="isVideoModalOpen" :video-url="currentVideoUrl" @close="closeVideoModal" />
+        
+        <!-- Watchlist Modal -->
+        <WatchlistModal
+          :is-open="isWatchlistModalOpen"
+          :movie-data="selectedMovieForWatchlist"
+          @close="closeWatchlistModal"
+          @added="handleWatchlistAdded"
+        />
       </div>
     </div>
   </div>
@@ -92,6 +100,7 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
 import { useTrending } from '~/composables/useTrending'
+import { useWatchlist } from '~/composables/useWatchlist'
 
 // State
 const showMobileMenu = ref(false)
@@ -103,6 +112,13 @@ const editorPicks = ref<any[]>([])
 const aiPicks = ref<any[]>([])
 const genres = ref<string[]>(['All'])
 const activeTab = ref('editor') // 'editor' or 'ai'
+
+// Watchlist Modal State
+const isWatchlistModalOpen = ref(false)
+const selectedMovieForWatchlist = ref<any>(null)
+
+// Get watchlist functionality
+const { fetchWatchlist, watchlistItems } = useWatchlist()
 
 // Filtered lists
 const filteredEditorPicks = computed(() => {
@@ -153,14 +169,30 @@ const playTrailer = (trailerUrl: string) => {
   }
 }
 const addToWishlist = (item: any) => {
-  // TODO: Implement wishlist functionality
-  console.log('Adding to wishlist:', item.title)
+  console.log('Adding to watchlist:', item.title)
+  selectedMovieForWatchlist.value = item
+  isWatchlistModalOpen.value = true
 }
+
+const closeWatchlistModal = () => {
+  isWatchlistModalOpen.value = false
+  selectedMovieForWatchlist.value = null
+}
+
+const handleWatchlistAdded = async () => {
+  // Refresh watchlist data
+  await fetchWatchlist()
+  closeWatchlistModal()
+}
+
 const closeVideoModal = () => {
   isVideoModalOpen.value = false
   currentVideoUrl.value = ''
 }
-onMounted(() => {
-  fetchTopPicks()
+onMounted(async () => {
+  await Promise.all([
+    fetchTopPicks(),
+    fetchWatchlist()
+  ])
 })
 </script>
